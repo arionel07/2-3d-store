@@ -38,6 +38,7 @@ const Scene3D = dynamic(() => import("../components/Scene3D"), {
 });
 
 type ViewMode = "2d" | "3d";
+type AppSection = "home" | "plan" | "gallery" | "history";
 type SaveState = "saved" | "unsaved" | "saving" | "error";
 type AuthState = "loading" | "authenticated" | "unauthenticated";
 type ObjectField = "xCm" | "yCm" | "widthCm" | "depthCm" | "heightCm" | "rotationDeg";
@@ -105,6 +106,7 @@ export default function Home() {
   const [layoutData, setLayoutData] = useState<LayoutResponse | null>(null);
   const [selectedObjectId, setSelectedObjectId] = useState<string | null>(null);
   const [selectedObjectIds, setSelectedObjectIds] = useState<string[]>([]);
+  const [activeSection, setActiveSection] = useState<AppSection>("home");
   const [viewMode, setViewMode] = useState<ViewMode>("2d");
   const [saveState, setSaveState] = useState<SaveState>("saved");
   const [isLoading, setIsLoading] = useState(true);
@@ -112,6 +114,7 @@ export default function Home() {
   const [isStoreModalOpen, setIsStoreModalOpen] = useState(false);
   const [isLayoutModalOpen, setIsLayoutModalOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isEditorToolsCollapsed, setIsEditorToolsCollapsed] = useState(false);
   const [isInspectorCollapsed, setIsInspectorCollapsed] = useState(false);
   const [isShiftPressed, setIsShiftPressed] = useState(false);
   const [hasConflict, setHasConflict] = useState(false);
@@ -188,6 +191,7 @@ export default function Home() {
       setLayoutData(response);
       setSelectedObjectId(response.objects[0]?.id ?? null);
       setSelectedObjectIds(response.objects[0] ? [response.objects[0].id] : []);
+      setActiveSection("plan");
       setSaveState("saved");
       setHasConflict(false);
     } catch (requestError) {
@@ -282,6 +286,7 @@ export default function Home() {
     setSelectedObjectIds([]);
     setError(null);
     setHasConflict(false);
+    setActiveSection("home");
   }
 
   function selectLayout(layoutId: string) {
@@ -292,6 +297,22 @@ export default function Home() {
     setSelectedObjectIds([]);
     setError(null);
     setHasConflict(false);
+    setActiveSection("plan");
+  }
+
+  function navigateSection(section: AppSection) {
+    if (section !== "home" && !layoutData) {
+      setActiveSection("home");
+      return;
+    }
+
+    setActiveSection(section);
+
+    if (section === "gallery" || section === "history") {
+      window.setTimeout(() => {
+        document.getElementById(`${section}-section`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 0);
+    }
   }
 
   function selectObject(id: string | null) {
@@ -454,6 +475,7 @@ export default function Home() {
     setSelectedStoreId(null);
     setSelectedLayoutId(null);
     setLayoutData(null);
+    setActiveSection("home");
   }
 
   const saveLabel = {
@@ -478,7 +500,7 @@ export default function Home() {
           <span className="brand-mark" aria-hidden="true"><i /><i /><i /><i /></span>
           <div><strong>Планировщик магазинов</strong><span>Рабочее пространство Vizaje-Nica</span></div>
         </div>
-        {layoutData ? (
+        {layoutData && activeSection !== "home" ? (
           <div className="view-switch" aria-label="Режим просмотра">
             <button type="button" className={viewMode === "2d" ? "active" : ""} onClick={() => setViewMode("2d")} aria-pressed={viewMode === "2d"}>2D план</button>
             <button type="button" className={viewMode === "3d" ? "active" : ""} onClick={() => setViewMode("3d")} aria-pressed={viewMode === "3d"}>3D вид</button>
@@ -531,7 +553,7 @@ export default function Home() {
 
         <section className="workspace">
           {error && <div className="error-banner"><span>{error}</span>{hasConflict && layoutData && <button type="button" className="button button-quiet conflict-reload" onClick={() => void loadLayout(layoutData.layout.id)}>Загрузить последнюю версию</button>}</div>}
-          {!layoutData ? (
+          {!layoutData || activeSection === "home" ? (
             isLoadingLayout ? (
               <div className="workspace-empty"><div className="spinner" /><p>Загрузка планировки…</p></div>
             ) : stores.length === 0 ? (
@@ -556,8 +578,17 @@ export default function Home() {
             <>
               <div className="workspace-header">
                 <div><div className="breadcrumb"><span>{selectedStore?.name}</span><b>/</b><strong>{layoutData.layout.name}</strong></div><p>{formatRoomSize(layoutData.layout.widthCm, layoutData.layout.depthCm)} · размеры хранятся в сантиметрах</p></div>
-                <div className="workspace-actions"><div className="toolbar-group">{objectPresets.map((preset) => <button type="button" key={preset.type} className="tool-button" onClick={() => addObject(preset)} title={`Добавить: ${preset.label.toLowerCase()}`}><span>{preset.icon}</span>{preset.label}</button>)}</div><button type="button" className="button button-primary save-button" onClick={() => void saveObjects()} disabled={saveState === "saving"}>{saveState === "saving" ? "Сохранение…" : "Сохранить план"}</button></div>
+                <div className="workspace-actions"><button type="button" className="button button-primary save-button" onClick={() => void saveObjects()} disabled={saveState === "saving"}>{saveState === "saving" ? "Сохранение…" : "Сохранить план"}</button></div>
               </div>
+              <div className={`editor-layout ${isEditorToolsCollapsed ? "tools-collapsed" : ""}`}>
+                <aside className="editor-tools-panel">
+                  <div className="editor-tools-header"><div><span className="eyebrow">Редактор</span>{!isEditorToolsCollapsed && <strong>Инструменты</strong>}</div><button type="button" className="panel-toggle" onClick={() => setIsEditorToolsCollapsed((current) => !current)} aria-label={isEditorToolsCollapsed ? "Развернуть инструменты" : "Свернуть инструменты"}>{isEditorToolsCollapsed ? "›" : "‹"}</button></div>
+                  {!isEditorToolsCollapsed && <>
+                    <div className="editor-tool-section"><span className="tool-section-label">Добавить объект</span><div className="editor-tool-list">{objectPresets.map((preset) => <button type="button" key={preset.type} className="editor-tool-button" onClick={() => addObject(preset)}><span className="editor-tool-icon">{preset.icon}</span><span>{preset.label}</span><b>+</b></button>)}</div></div>
+                    <div className="editor-tool-section editor-object-list"><div className="tool-section-heading"><span className="tool-section-label">Объекты</span><small>{layoutData.objects.length}</small></div>{layoutData.objects.length === 0 ? <p className="editor-tools-empty">Добавьте объект, чтобы начать расстановку.</p> : layoutData.objects.map((object) => <button type="button" key={object.id} className={`editor-object-row ${selectedObjectIds.includes(object.id) ? "selected" : ""}`} onClick={() => selectObject(object.id)}><span className={`object-status ${validity[object.id] ? "valid" : "invalid"}`} /><span><strong>{object.name}</strong><small>{getObjectTypeLabel(object.type)} · {object.widthCm} × {object.depthCm} см</small></span></button>)}</div>
+                  </>}
+                </aside>
+                <div className="editor-main">
               <div className={`editor-grid ${isInspectorCollapsed ? "inspector-collapsed" : ""}`}>
                 <div className="canvas-panel">
                   <div className="canvas-toolbar"><span className="canvas-title">{viewMode === "2d" ? "План помещения" : "Приблизительный 3D-вид"}</span><span className="canvas-help">{viewMode === "2d" ? "Перетаскивайте объекты. Масштабируйте колесом или жестами; холст не перемещается." : "Вращение — мышью или одним пальцем · панорама — правой кнопкой или двумя пальцами · масштаб — колесом."}</span><div className="canvas-toolbar-actions">{isInspectorCollapsed && <button type="button" className="panel-toggle" onClick={() => setIsInspectorCollapsed(false)} title="Показать панель">Панель</button>}</div></div>
@@ -578,12 +609,21 @@ export default function Home() {
                 </aside>}
               </div>
               <div className="shortcut-hint">Ctrl+D — дублировать · Delete — удалить · Ctrl+A — выбрать всё · Esc — снять выделение · удерживайте Shift — измерения</div>
-              <VersionHistory layoutId={layoutData.layout.id} currentVersion={layoutData.currentVersion} onRestored={handleRestored} onConflict={() => { setHasConflict(true); setError("План изменился в другой сессии. Обновите последнюю версию перед восстановлением."); }} />
-              <GallerySection layoutId={layoutData.layout.id} media={layoutData.media} isLoading={false} onChange={updateMedia} />
+              </div>
+              </div>
+              <div id="history-section"><VersionHistory layoutId={layoutData.layout.id} currentVersion={layoutData.currentVersion} onRestored={handleRestored} onConflict={() => { setHasConflict(true); setError("План изменился в другой сессии. Обновите последнюю версию перед восстановлением."); }} /></div>
+              <div id="gallery-section"><GallerySection layoutId={layoutData.layout.id} media={layoutData.media} isLoading={false} onChange={updateMedia} /></div>
             </>
           )}
         </section>
       </div>
+
+      <nav className="floating-nav" aria-label="Разделы приложения">
+        <button type="button" className={activeSection === "home" ? "active" : ""} onClick={() => navigateSection("home")}><span aria-hidden="true">⌂</span>Главная</button>
+        <button type="button" className={activeSection === "plan" ? "active" : ""} onClick={() => navigateSection("plan")} disabled={!layoutData}><span aria-hidden="true">□</span>План</button>
+        <button type="button" className={activeSection === "gallery" ? "active" : ""} onClick={() => navigateSection("gallery")} disabled={!layoutData}><span aria-hidden="true">▧</span>Галерея</button>
+        <button type="button" className={activeSection === "history" ? "active" : ""} onClick={() => navigateSection("history")} disabled={!layoutData}><span aria-hidden="true">↺</span>История</button>
+      </nav>
 
       {isStoreModalOpen && <div className="modal-backdrop" role="presentation"><form className="modal-card" onSubmit={(event) => void handleCreateStore(event)}><div className="modal-header"><div><span className="eyebrow">Новое рабочее пространство</span><h2>Создать магазин</h2></div><button type="button" className="icon-button" onClick={() => setIsStoreModalOpen(false)} aria-label="Закрыть">×</button></div><label className="modal-field"><span>Название магазина</span><input required autoFocus value={storeForm.name} onChange={(event) => setStoreForm((current) => ({ ...current, name: event.target.value }))} placeholder="Торговый центр Riverside" /></label><label className="modal-field"><span>Адрес <em>необязательно</em></span><input value={storeForm.address} onChange={(event) => setStoreForm((current) => ({ ...current, address: event.target.value }))} placeholder="Город, улица или внутренний ориентир" /></label><div className="modal-actions"><button type="button" className="button button-quiet" onClick={() => setIsStoreModalOpen(false)}>Отмена</button><button type="submit" className="button button-primary">Создать магазин</button></div></form></div>}
       {isLayoutModalOpen && selectedStore && <div className="modal-backdrop" role="presentation"><form className="modal-card" onSubmit={(event) => void handleCreateLayout(event)}><div className="modal-header"><div><span className="eyebrow">{selectedStore.name}</span><h2>Создать планировку</h2></div><button type="button" className="icon-button" onClick={() => setIsLayoutModalOpen(false)} aria-label="Закрыть">×</button></div><label className="modal-field"><span>Название планировки</span><input required autoFocus value={layoutForm.name} onChange={(event) => setLayoutForm((current) => ({ ...current, name: event.target.value }))} placeholder="Основной зал" /></label><div className="field-grid two-columns modal-dimensions"><label className="modal-field"><span>Ширина <em>см</em></span><input required min="1" type="number" value={layoutForm.widthCm} onChange={(event) => setLayoutForm((current) => ({ ...current, widthCm: event.target.value }))} /></label><label className="modal-field"><span>Глубина <em>см</em></span><input required min="1" type="number" value={layoutForm.depthCm} onChange={(event) => setLayoutForm((current) => ({ ...current, depthCm: event.target.value }))} /></label></div><p className="dimension-preview">{dimensionPreview}</p><div className="modal-actions"><button type="button" className="button button-quiet" onClick={() => setIsLayoutModalOpen(false)}>Отмена</button><button type="submit" className="button button-primary">Создать планировку</button></div></form></div>}
