@@ -52,6 +52,10 @@ function formatDistance(valueCm: number) {
   return `${rounded.toLocaleString("ru-RU")} см`;
 }
 
+function formatRoomDimension(valueCm: number) {
+  return `${(valueCm / 100).toLocaleString("ru-RU", { maximumFractionDigits: 2 })} м`;
+}
+
 export default function PlanCanvas({
   room,
   objects,
@@ -116,25 +120,59 @@ export default function PlanCanvas({
       return;
     }
 
-    const direction = event.evt.deltaY > 0 ? 0.9 : 1.1;
+    zoomAt(viewport.scale * (event.evt.deltaY > 0 ? 0.9 : 1.1), pointer);
+  }
+
+  function zoomAt(requestedScale: number, point: { x: number; y: number }) {
     const fitScale = getFitViewport().scale;
     const nextScale = Math.min(
       fitScale * MAX_SCALE_MULTIPLIER,
-      Math.max(fitScale * MIN_SCALE_MULTIPLIER, viewport.scale * direction),
+      Math.max(fitScale * MIN_SCALE_MULTIPLIER, requestedScale),
     );
     const worldPoint = {
-      x: (pointer.x - viewport.x) / viewport.scale,
-      y: (pointer.y - viewport.y) / viewport.scale,
+      x: (point.x - viewport.x) / viewport.scale,
+      y: (point.y - viewport.y) / viewport.scale,
     };
 
     setViewport({
       scale: nextScale,
-      x: pointer.x - worldPoint.x * nextScale,
-      y: pointer.y - worldPoint.y * nextScale,
+      x: point.x - worldPoint.x * nextScale,
+      y: point.y - worldPoint.y * nextScale,
     });
   }
 
+  function zoomBy(factor: number) {
+    zoomAt(viewport.scale * factor, { x: size.width / 2, y: size.height / 2 });
+  }
+
+  function startCanvasPan(event: { target: { getStage: () => any; name: () => string }; evt: MouseEvent | TouchEvent }) {
+    const stage = event.target.getStage();
+    const targetName = event.target.name();
+    if (!stage || (event.target !== stage && targetName !== "room-background")) {
+      return;
+    }
+
+    if ("button" in event.evt && event.evt.button !== 0) {
+      return;
+    }
+
+    event.evt.preventDefault();
+    onSelect(null);
+    stage.startDrag();
+  }
+
+  function finishCanvasPan(event: { target: { getStage: () => any } }) {
+    const stage = event.target.getStage();
+    if (!stage) return;
+    setViewport((current) => ({ ...current, x: stage.x(), y: stage.y() }));
+  }
+
   function handleTouchStart(event: { evt: TouchEvent; target: { getStage: () => any } }) {
+    if (event.evt.touches.length === 1) {
+      startCanvasPan(event as { target: { getStage: () => any; name: () => string }; evt: TouchEvent });
+      return;
+    }
+
     if (event.evt.touches.length !== 2 || !containerRef.current) {
       return;
     }
@@ -260,11 +298,11 @@ export default function PlanCanvas({
         y={viewport.y}
         scaleX={viewport.scale}
         scaleY={viewport.scale}
+        draggable
         onMouseDown={(event) => {
-          if (event.target === event.target.getStage()) {
-            onSelect(null);
-          }
+          startCanvasPan(event as { target: { getStage: () => any; name: () => string }; evt: MouseEvent });
         }}
+        onDragEnd={finishCanvasPan}
         onWheel={handleWheel}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
@@ -272,6 +310,7 @@ export default function PlanCanvas({
       >
         <Layer>
           <Rect
+            name="room-background"
             x={0}
             y={0}
             width={room.widthCm}
@@ -287,7 +326,7 @@ export default function PlanCanvas({
           <Text
             x={0}
             y={-27 / viewport.scale}
-            text={`${room.widthCm} см`}
+            text={formatRoomDimension(room.widthCm)}
             fill="#738392"
             fontSize={labelFontSize}
             width={room.widthCm}
@@ -296,7 +335,7 @@ export default function PlanCanvas({
           <Text
             x={-38 / viewport.scale}
             y={0}
-            text={`${room.depthCm} см`}
+            text={formatRoomDimension(room.depthCm)}
             fill="#738392"
             fontSize={labelFontSize}
             rotation={-90}
@@ -374,6 +413,11 @@ export default function PlanCanvas({
           ))}
         </Layer>
       </Stage>
+      <div className="canvas-zoom-controls" aria-label="Масштаб холста">
+        <button type="button" onClick={() => zoomBy(0.9)} aria-label="Уменьшить масштаб">−</button>
+        <span>{Math.round((viewport.scale / getFitViewport().scale) * 100)}%</span>
+        <button type="button" onClick={() => zoomBy(1.1)} aria-label="Увеличить масштаб">+</button>
+      </div>
       <button type="button" className="canvas-fit-button" onClick={fitRoom}>
         Показать всё помещение
       </button>

@@ -10,6 +10,7 @@ type LoginFormProps = {
 export default function LoginForm({ onAuthenticated }: LoginFormProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -33,29 +34,60 @@ export default function LoginForm({ onAuthenticated }: LoginFormProps) {
 
   return (
     <main className="auth-shell">
-      <section className="auth-card" aria-labelledby="login-title">
-        <div className="brand-lockup auth-brand">
+      <header className="auth-header">
+        <div className="brand-lockup auth-brand" aria-label="Планировка">
           <span className="brand-mark" aria-hidden="true"><i /><i /><i /><i /></span>
-          <div><strong>Планировщик магазинов</strong><span>Рабочее пространство Vizaje-Nica</span></div>
+          <div><strong>Планировка</strong></div>
         </div>
-        <span className="eyebrow">Закрытое рабочее пространство</span>
-        <h1 id="login-title">С возвращением.</h1>
-        <p className="auth-intro">Войдите с помощью аккаунта, созданного для вашей команды.</p>
+      </header>
+
+      <section className="auth-form-panel" aria-labelledby="login-title">
+        <div className="auth-heading">
+          <h1 id="login-title">С возвращением</h1>
+          <p>Войдите в рабочее пространство</p>
+        </div>
         <form className="auth-form" onSubmit={(event) => void handleSubmit(event)}>
-          <label className="modal-field">
+          <label className="auth-field">
             <span>Электронная почта</span>
-            <input type="email" autoComplete="username" required value={email} onChange={(event) => setEmail(event.target.value)} />
+            <input
+              type="email"
+              name="email"
+              autoComplete="username"
+              required
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              aria-invalid={Boolean(error)}
+            />
           </label>
-          <label className="modal-field">
+          <label className="auth-field">
             <span>Пароль</span>
-            <input type="password" autoComplete="current-password" required value={password} onChange={(event) => setPassword(event.target.value)} />
+            <span className="auth-password-field">
+              <input
+                type={showPassword ? "text" : "password"}
+                name="password"
+                autoComplete="current-password"
+                required
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                aria-invalid={Boolean(error)}
+              />
+              <button
+                className="auth-password-toggle"
+                type="button"
+                aria-label={showPassword ? "Скрыть пароль" : "Показать пароль"}
+                aria-pressed={showPassword}
+                onClick={() => setShowPassword((visible) => !visible)}
+              >
+                {showPassword ? "Скрыть" : "Показать"}
+              </button>
+            </span>
           </label>
           {error && <p className="auth-error" role="alert">{error}</p>}
-          <button className="button button-primary auth-submit" type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Вход…" : "Войти"}
+          <button className="button button-primary auth-submit" type="submit" disabled={isSubmitting} aria-busy={isSubmitting}>
+            {isSubmitting ? "Входим…" : "Войти"}
           </button>
         </form>
-        <p className="auth-footnote">Доступ управляется внутри команды. Публичной регистрации нет.</p>
+        <p className="auth-footnote">Доступ выдаёт администратор</p>
       </section>
     </main>
   );

@@ -69,6 +69,10 @@ export function getApiErrorMessage(error: unknown) {
     const knownMessages: Record<string, string> = {
       "Authentication required": "Требуется войти в аккаунт",
       "Authentication unavailable": "Сервис авторизации временно недоступен",
+      "Invalid email or password": "Неверная электронная почта или пароль",
+      "Invalid credentials": "Неверная электронная почта или пароль",
+      "Invalid password": "Неверная электронная почта или пароль",
+      "User not found": "Неверная электронная почта или пароль",
       "Store not found": "Магазин не найден",
       "Layout not found": "Планировка не найдена",
       "Media not found": "Изображение не найдено",

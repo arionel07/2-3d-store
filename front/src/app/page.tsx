@@ -11,6 +11,7 @@ import {
 import PlanCanvas from "../components/PlanCanvas";
 import GallerySection from "../components/GallerySection";
 import LoginForm from "../components/LoginForm";
+import StoreCard from "../components/StoreCard";
 import VersionHistory from "../components/VersionHistory";
 import {
   createLayout,
@@ -62,12 +63,6 @@ function makeObjectId() {
   return globalThis.crypto?.randomUUID?.() ?? `object-${Date.now()}`;
 }
 
-function countLayouts(value: number) {
-  if (value === 1) return "1 макет";
-  if (value >= 2 && value <= 4) return `${value} макета`;
-  return `${value} макетов`;
-}
-
 function formatNumber(value: number, maximumFractionDigits = 2) {
   return value.toLocaleString("ru-RU", { maximumFractionDigits });
 }
@@ -113,9 +108,7 @@ export default function Home() {
   const [isLoadingLayout, setIsLoadingLayout] = useState(false);
   const [isStoreModalOpen, setIsStoreModalOpen] = useState(false);
   const [isLayoutModalOpen, setIsLayoutModalOpen] = useState(false);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isEditorToolsCollapsed, setIsEditorToolsCollapsed] = useState(false);
-  const [isInspectorCollapsed, setIsInspectorCollapsed] = useState(false);
   const [isShiftPressed, setIsShiftPressed] = useState(false);
   const [hasConflict, setHasConflict] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -236,6 +229,7 @@ export default function Home() {
       }
 
       if (isEditableTarget(event.target)) return;
+      if (activeSection !== "plan") return;
 
       if (event.key === "Shift") {
         setIsShiftPressed(true);
@@ -276,18 +270,7 @@ export default function Home() {
       window.removeEventListener("keyup", handleKeyUp);
       window.removeEventListener("blur", handleWindowBlur);
     };
-  }, [isLayoutModalOpen, isStoreModalOpen, layoutData, selectedObjectId, selectedObjectIds]);
-
-  function selectStore(storeId: string) {
-    setSelectedStoreId(storeId);
-    setSelectedLayoutId(null);
-    setLayoutData(null);
-    setSelectedObjectId(null);
-    setSelectedObjectIds([]);
-    setError(null);
-    setHasConflict(false);
-    setActiveSection("home");
-  }
+  }, [activeSection, isLayoutModalOpen, isStoreModalOpen, layoutData, selectedObjectId, selectedObjectIds]);
 
   function selectLayout(layoutId: string) {
     const store = stores.find((item) => item.layouts.some((layout) => layout.id === layoutId));
@@ -498,9 +481,10 @@ export default function Home() {
       <header className="topbar">
         <div className="brand-lockup">
           <span className="brand-mark" aria-hidden="true"><i /><i /><i /><i /></span>
-          <div><strong>Планировщик магазинов</strong><span>Рабочее пространство Vizaje-Nica</span></div>
+          <div><strong>Планировка</strong><span>Рабочее пространство Vizaje-Nica</span></div>
         </div>
-        {layoutData && activeSection !== "home" ? (
+        {layoutData && activeSection === "plan" && <div className="topbar-context"><span>{selectedStore?.name}</span><b>/</b><strong>{layoutData.layout.name}</strong></div>}
+        {layoutData && activeSection === "plan" ? (
           <div className="view-switch" aria-label="Режим просмотра">
             <button type="button" className={viewMode === "2d" ? "active" : ""} onClick={() => setViewMode("2d")} aria-pressed={viewMode === "2d"}>2D план</button>
             <button type="button" className={viewMode === "3d" ? "active" : ""} onClick={() => setViewMode("3d")} aria-pressed={viewMode === "3d"}>3D вид</button>
@@ -513,106 +497,74 @@ export default function Home() {
         <div className={`save-indicator ${saveState}`}><span className="status-dot" /><span>{saveLabel}</span></div>
       </header>
 
-      <div className={`app-body ${isSidebarCollapsed ? "sidebar-collapsed" : ""}`}>
-        <aside className="sidebar">
-          <div className="sidebar-heading">
-            <div><span className="eyebrow">Рабочее пространство</span><h1>Магазины</h1></div>
-            <div className="sidebar-heading-actions">
-              <button type="button" className="icon-button" onClick={() => setIsStoreModalOpen(true)} aria-label="Создать магазин" title="Создать магазин">+</button>
-              <button type="button" className="panel-toggle" onClick={() => setIsSidebarCollapsed((current) => !current)} aria-label="Свернуть список магазинов" title="Свернуть список магазинов">‹</button>
-            </div>
-          </div>
-          {isLoading ? <div className="sidebar-loading">Загрузка магазинов…</div> : stores.length === 0 ? (
-            <div className="sidebar-empty">
-              <div className="empty-icon">⌂</div><strong>Магазинов пока нет</strong><p>Создайте магазин, чтобы начать планировать планировку.</p>
-              <button type="button" className="button button-primary button-full" onClick={() => setIsStoreModalOpen(true)}>+ Новый магазин</button>
-            </div>
-          ) : (
-            <div className="store-list">
-              {stores.map((store) => (
-                <div key={store.id} className="store-group">
-                  <button type="button" className={`store-row ${selectedStoreId === store.id ? "selected" : ""}`} onClick={() => selectStore(store.id)}>
-                    <span className="store-avatar">{store.name.slice(0, 1).toUpperCase()}</span>
-                    <span className="store-row-copy"><strong>{store.name}</strong><small>{countLayouts(store.layouts.length)}</small></span><span className="chevron">›</span>
-                  </button>
-                  {selectedStoreId === store.id && <div className="layout-list">
-                    {store.layouts.map((layout) => (
-                      <button type="button" key={layout.id} className={`layout-row ${selectedLayoutId === layout.id ? "selected" : ""}`} onClick={() => selectLayout(layout.id)}>
-                        <span className="layout-glyph">□</span><span><strong>{layout.name}</strong><small>{formatRoomSize(layout.widthCm, layout.depthCm)}</small></span>
-                      </button>
-                    ))}
-                    <button type="button" className="layout-add" onClick={() => setIsLayoutModalOpen(true)}>+ Новая планировка</button>
-                  </div>}
-                </div>
-              ))}
-            </div>
-          )}
-          {stores.length > 0 && <button type="button" className="sidebar-create" onClick={() => setIsStoreModalOpen(true)}>+ Новый магазин</button>}
-          <div className="sidebar-footer"><span className="footer-dot" /><span>Локальное рабочее пространство</span></div>
-        </aside>
+      <div className={`app-body ${activeSection === "plan" ? "plan-body" : ""} ${activeSection === "home" ? "home-body" : ""} ${activeSection === "gallery" ? "gallery-body" : ""} ${activeSection === "history" ? "history-body" : ""}`}>
 
         <section className="workspace">
           {error && <div className="error-banner"><span>{error}</span>{hasConflict && layoutData && <button type="button" className="button button-quiet conflict-reload" onClick={() => void loadLayout(layoutData.layout.id)}>Загрузить последнюю версию</button>}</div>}
           {!layoutData || activeSection === "home" ? (
-            isLoadingLayout ? (
+            isLoading || isLoadingLayout ? (
               <div className="workspace-empty"><div className="spinner" /><p>Загрузка планировки…</p></div>
             ) : stores.length === 0 ? (
               <div className="workspace-empty"><div className="empty-illustration" aria-hidden="true"><span /><span /><span /></div><span className="eyebrow">Начните с магазина</span><h2>Планируйте торговый зал быстрее.</h2><p>Добавьте магазин и первую планировку, чтобы расставить стеллажи, кассы и витрины в сантиметрах.</p><button type="button" className="button button-primary" onClick={() => setIsStoreModalOpen(true)}>+ Создать первый магазин</button></div>
             ) : (
-              <section className="overview" aria-labelledby="overview-title">
-                <div className="overview-header"><div><span className="eyebrow">Обзор пространства</span><h2 id="overview-title">Магазины и планировки</h2><p>Выберите нужную планировку, чтобы открыть редактор.</p></div><button type="button" className="button button-primary" onClick={() => setIsStoreModalOpen(true)}>+ Новый магазин</button></div>
-                <div className="overview-grid">
-                  {stores.map((store) => (
-                    <article className="overview-card" key={store.id}>
-                      <div className="overview-card-heading"><span className="store-avatar">{store.name.slice(0, 1).toUpperCase()}</span><div><strong>{store.name}</strong><small>{store.address || "Адрес не указан"}</small></div></div>
-                      {store.layouts.length === 0 ? <div className="overview-empty">Планировок пока нет.</div> : <div className="overview-layouts">{store.layouts.map((layout) => <button type="button" key={layout.id} onClick={() => { setSelectedStoreId(store.id); selectLayout(layout.id); }}><span><strong>{layout.name}</strong><small>{formatRoomSize(layout.widthCm, layout.depthCm)}</small></span><span>Открыть&nbsp;›</span></button>)}</div>}
-                      <button type="button" className="overview-add" onClick={() => { setSelectedStoreId(store.id); setIsLayoutModalOpen(true); }}>+ Новая планировка</button>
-                    </article>
-                  ))}
+              <section className="stores-home" aria-labelledby="stores-title">
+                <div className="stores-home-header">
+                  <div><span className="eyebrow">Рабочее пространство</span><h1 id="stores-title">Магазины</h1><p>Планы торговых пространств в одном месте</p></div>
+                  <button type="button" className="button home-primary" onClick={() => setIsStoreModalOpen(true)}><span aria-hidden="true">+</span>Новый магазин</button>
+                </div>
+                <div className="stores-home-count">{stores.length} {stores.length === 1 ? "магазин" : stores.length < 5 ? "магазина" : "магазинов"}</div>
+                <div className="store-card-grid">
+                  {stores.map((store) => <StoreCard key={store.id} store={store} onOpenLayout={(storeId, layoutId) => { setSelectedStoreId(storeId); selectLayout(layoutId); }} onCreateLayout={(storeId) => { setSelectedStoreId(storeId); setIsLayoutModalOpen(true); }} />)}
                 </div>
               </section>
             )
           ) : isLoadingLayout || !selectedLayout ? (
             <div className="workspace-empty"><div className="spinner" /><p>Загрузка планировки…</p></div>
+          ) : activeSection === "gallery" ? (
+            <div className="gallery-page" id="gallery-section">
+              <div className="gallery-context"><span>{selectedStore?.name}</span><b>/</b><strong>{layoutData.layout.name}</strong></div>
+              <GallerySection layoutId={layoutData.layout.id} media={layoutData.media} isLoading={false} onChange={updateMedia} />
+            </div>
+          ) : activeSection === "history" ? (
+            <div className="history-page" id="history-section">
+              <VersionHistory layoutId={layoutData.layout.id} currentVersion={layoutData.currentVersion} onRestored={handleRestored} onConflict={() => { setHasConflict(true); setError("План изменился в другой сессии. Обновите последнюю версию перед восстановлением."); }} />
+            </div>
           ) : (
             <>
-              <div className="workspace-header">
-                <div><div className="breadcrumb"><span>{selectedStore?.name}</span><b>/</b><strong>{layoutData.layout.name}</strong></div><p>{formatRoomSize(layoutData.layout.widthCm, layoutData.layout.depthCm)} · размеры хранятся в сантиметрах</p></div>
+              <div className="editor-page-header">
+                <div><span className="eyebrow">План помещения</span><p>{formatRoomSize(layoutData.layout.widthCm, layoutData.layout.depthCm)} · размеры хранятся в сантиметрах</p></div>
                 <div className="workspace-actions"><button type="button" className="button button-primary save-button" onClick={() => void saveObjects()} disabled={saveState === "saving"}>{saveState === "saving" ? "Сохранение…" : "Сохранить план"}</button></div>
               </div>
               <div className={`editor-layout ${isEditorToolsCollapsed ? "tools-collapsed" : ""}`}>
                 <aside className="editor-tools-panel">
-                  <div className="editor-tools-header"><div><span className="eyebrow">Редактор</span>{!isEditorToolsCollapsed && <strong>Инструменты</strong>}</div><button type="button" className="panel-toggle" onClick={() => setIsEditorToolsCollapsed((current) => !current)} aria-label={isEditorToolsCollapsed ? "Развернуть инструменты" : "Свернуть инструменты"}>{isEditorToolsCollapsed ? "›" : "‹"}</button></div>
+                  <div className="editor-tools-header"><div><span className="eyebrow">Слои</span>{!isEditorToolsCollapsed && <strong>Инструменты и объекты</strong>}</div><button type="button" className="panel-toggle" onClick={() => setIsEditorToolsCollapsed((current) => !current)} aria-label={isEditorToolsCollapsed ? "Развернуть панель редактора" : "Свернуть панель редактора"} title={isEditorToolsCollapsed ? "Развернуть панель редактора" : "Свернуть панель редактора"}>{isEditorToolsCollapsed ? "›" : "‹"}</button></div>
                   {!isEditorToolsCollapsed && <>
-                    <div className="editor-tool-section"><span className="tool-section-label">Добавить объект</span><div className="editor-tool-list">{objectPresets.map((preset) => <button type="button" key={preset.type} className="editor-tool-button" onClick={() => addObject(preset)}><span className="editor-tool-icon">{preset.icon}</span><span>{preset.label}</span><b>+</b></button>)}</div></div>
+                    <div className="editor-tool-section editor-tool-insert"><span className="tool-section-label">Добавить объект</span><div className="editor-tool-list">{objectPresets.map((preset) => <button type="button" key={preset.type} className="editor-tool-button" onClick={() => addObject(preset)}><span className="editor-tool-icon">{preset.icon}</span><span>{preset.label}</span><b>+</b></button>)}</div></div>
                     <div className="editor-tool-section editor-object-list"><div className="tool-section-heading"><span className="tool-section-label">Объекты</span><small>{layoutData.objects.length}</small></div>{layoutData.objects.length === 0 ? <p className="editor-tools-empty">Добавьте объект, чтобы начать расстановку.</p> : layoutData.objects.map((object) => <button type="button" key={object.id} className={`editor-object-row ${selectedObjectIds.includes(object.id) ? "selected" : ""}`} onClick={() => selectObject(object.id)}><span className={`object-status ${validity[object.id] ? "valid" : "invalid"}`} /><span><strong>{object.name}</strong><small>{getObjectTypeLabel(object.type)} · {object.widthCm} × {object.depthCm} см</small></span></button>)}</div>
+                    <div className="editor-properties">
+                      {selectedObject ? <>
+                        <div className="inspector-heading"><div><span className="eyebrow">Выбранный объект</span><input className="object-name-input" value={selectedObject.name} onChange={(event) => updateObject(selectedObject.id, { name: event.target.value })} aria-label="Название объекта" /></div><button type="button" className="icon-button danger" onClick={removeSelectedObjects} aria-label="Удалить выбранные объекты" title="Удалить объект">×</button></div>
+                        <div className={`fit-status ${validity[selectedObject.id] ? "valid" : "invalid"}`}><span>{validity[selectedObject.id] ? "✓" : "!"}</span><div><strong>{validity[selectedObject.id] ? "Размещение корректно" : "Нужно исправить размещение"}</strong><small>{validity[selectedObject.id] ? "Объект помещается в комнату и не пересекается." : "Переместите или измените размер объекта."}</small></div></div>
+                        <div className="inspector-section"><div className="section-title">Размеры <span>(см)</span></div><div className="field-grid three-columns">{(["widthCm", "depthCm", "heightCm"] as const).map((field) => <label key={field}><span>{objectFieldLabels[field]}</span><input type="number" min="1" value={selectedObject[field]} onChange={(event) => updateNumericObjectField(field, event.target.value)} /></label>)}</div></div>
+                        <div className="inspector-section"><div className="section-title">Позиция <span>(см)</span></div><div className="field-grid two-columns">{(["xCm", "yCm"] as const).map((field) => <label key={field}><span>{objectFieldLabels[field]}</span><input type="number" value={selectedObject[field]} onChange={(event) => updateNumericObjectField(field, event.target.value)} /></label>)}</div></div>
+                        <div className="inspector-section rotation-section"><div className="section-title">Поворот <span>(°)</span></div><div className="rotation-control"><input type="number" value={selectedObject.rotationDeg} onChange={(event) => updateNumericObjectField("rotationDeg", event.target.value)} /><button type="button" className="rotate-button" onClick={rotateSelectedObject} title="Повернуть на 90 градусов">↻</button></div></div>
+                        {isShiftPressed && measurements && <div className="measurement-panel"><div className="section-title">Измерения <span>Shift</span></div><div className="measurement-walls"><span>Слева <b>{formatMeasurement(measurements.walls.leftCm)}</b></span><span>Справа <b>{formatMeasurement(measurements.walls.rightCm)}</b></span><span>Сверху <b>{formatMeasurement(measurements.walls.topCm)}</b></span><span>Снизу <b>{formatMeasurement(measurements.walls.bottomCm)}</b></span></div><div className="measurement-objects"><span>Ближайшие объекты</span>{measurements.nearestObjects.length === 0 ? <small>Других объектов нет</small> : measurements.nearestObjects.map((item) => <small key={item.id}>{item.name}: <b>{formatMeasurement(item.distanceCm)}</b></small>)}</div></div>}
+                        <div className="inspector-footer"><span className="type-label">Тип</span><span className="type-value">{getObjectTypeLabel(selectedObject.type)}</span></div>
+                      </> : <div className="inspector-empty"><div className="inspector-empty-icon">⌁</div><strong>Выберите объект</strong><p>Нажмите на объект или слой, чтобы изменить его параметры.</p></div>}
+                    </div>
                   </>}
                 </aside>
                 <div className="editor-main">
-              <div className={`editor-grid ${isInspectorCollapsed ? "inspector-collapsed" : ""}`}>
+              <div className="editor-grid">
                 <div className="canvas-panel">
-                  <div className="canvas-toolbar"><span className="canvas-title">{viewMode === "2d" ? "План помещения" : "Приблизительный 3D-вид"}</span><span className="canvas-help">{viewMode === "2d" ? "Перетаскивайте объекты. Масштабируйте колесом или жестами; холст не перемещается." : "Вращение — мышью или одним пальцем · панорама — правой кнопкой или двумя пальцами · масштаб — колесом."}</span><div className="canvas-toolbar-actions">{isInspectorCollapsed && <button type="button" className="panel-toggle" onClick={() => setIsInspectorCollapsed(false)} title="Показать панель">Панель</button>}</div></div>
-                  {viewMode === "2d" ? <PlanCanvas room={layoutData.layout} objects={layoutData.objects} selectedObjectId={selectedObjectId} selectedObjectIds={selectedObjectIds} validity={validity} measurements={measurements} showMeasurements={isShiftPressed} onSelect={selectObject} onMove={(id, xCm, yCm) => updateObject(id, { xCm, yCm })} /> : <div className="scene-3d"><Scene3D room={layoutData.layout} objects={layoutData.objects} /></div>}
+                  <div className="canvas-toolbar"><span className="canvas-title">{viewMode === "2d" ? "План помещения" : "Приблизительный 3D-вид"}</span><span className="canvas-help">{viewMode === "2d" ? "Перетаскивайте объекты. Пустое пространство — панорама. Колесо — масштаб." : "Вращение — мышью или одним пальцем · панорама — правой кнопкой или двумя пальцами · масштаб — колесом."}</span></div>
+                  {viewMode === "2d" ? <PlanCanvas room={layoutData.layout} objects={layoutData.objects} selectedObjectId={selectedObjectId} selectedObjectIds={selectedObjectIds} validity={validity} measurements={measurements} showMeasurements={isShiftPressed} onSelect={selectObject} onMove={(id, xCm, yCm) => updateObject(id, { xCm, yCm })} /> : <div className="scene-3d"><Scene3D room={layoutData.layout} objects={layoutData.objects} selectedObjectId={selectedObjectId} onSelect={selectObject} /></div>}
                   <div className="canvas-legend"><span><i className="legend-dot valid" /> Объект помещается</span><span><i className="legend-dot invalid" /> Нужно исправить</span><span className="legend-note">Сетка: 50 см · Shift — измерения</span></div>
                 </div>
-                {!isInspectorCollapsed && <aside className="inspector">
-                  <div className="inspector-collapse-row"><span className="eyebrow">Панель объекта</span><button type="button" className="panel-toggle" onClick={() => setIsInspectorCollapsed(true)} title="Свернуть панель">›</button></div>
-                  {selectedObject ? <>
-                    <div className="inspector-heading"><div><span className="eyebrow">Выбранный объект</span><input className="object-name-input" value={selectedObject.name} onChange={(event) => updateObject(selectedObject.id, { name: event.target.value })} aria-label="Название объекта" /></div><button type="button" className="icon-button danger" onClick={removeSelectedObjects} aria-label="Удалить выбранные объекты" title="Удалить объект">×</button></div>
-                    <div className={`fit-status ${validity[selectedObject.id] ? "valid" : "invalid"}`}><span>{validity[selectedObject.id] ? "✓" : "!"}</span><div><strong>{validity[selectedObject.id] ? "Размещение корректно" : "Нужно исправить размещение"}</strong><small>{validity[selectedObject.id] ? "Объект помещается в комнату и не пересекается." : "Переместите или измените размер объекта."}</small></div></div>
-                    <div className="inspector-section"><div className="section-title">Размеры <span>(см)</span></div><div className="field-grid three-columns">{(["widthCm", "depthCm", "heightCm"] as const).map((field) => <label key={field}><span>{objectFieldLabels[field]}</span><input type="number" min="1" value={selectedObject[field]} onChange={(event) => updateNumericObjectField(field, event.target.value)} /></label>)}</div></div>
-                    <div className="inspector-section"><div className="section-title">Позиция <span>(см)</span></div><div className="field-grid two-columns">{(["xCm", "yCm"] as const).map((field) => <label key={field}><span>{objectFieldLabels[field]}</span><input type="number" value={selectedObject[field]} onChange={(event) => updateNumericObjectField(field, event.target.value)} /></label>)}</div></div>
-                    <div className="inspector-section rotation-section"><div className="section-title">Поворот <span>(°)</span></div><div className="rotation-control"><input type="number" value={selectedObject.rotationDeg} onChange={(event) => updateNumericObjectField("rotationDeg", event.target.value)} /><button type="button" className="rotate-button" onClick={rotateSelectedObject} title="Повернуть на 90 градусов">↻</button></div></div>
-                    {isShiftPressed && measurements && <div className="measurement-panel"><div className="section-title">Измерения <span>Shift</span></div><div className="measurement-walls"><span>Слева <b>{formatMeasurement(measurements.walls.leftCm)}</b></span><span>Справа <b>{formatMeasurement(measurements.walls.rightCm)}</b></span><span>Сверху <b>{formatMeasurement(measurements.walls.topCm)}</b></span><span>Снизу <b>{formatMeasurement(measurements.walls.bottomCm)}</b></span></div><div className="measurement-objects"><span>Ближайшие объекты</span>{measurements.nearestObjects.length === 0 ? <small>Других объектов нет</small> : measurements.nearestObjects.map((item) => <small key={item.id}>{item.name}: <b>{formatMeasurement(item.distanceCm)}</b></small>)}</div></div>}
-                    <div className="inspector-footer"><span className="type-label">Тип</span><span className="type-value">{getObjectTypeLabel(selectedObject.type)}</span></div>
-                  </> : <div className="inspector-empty"><div className="inspector-empty-icon">⌁</div><strong>Выберите объект</strong><p>Нажмите на объект, чтобы изменить размер, позицию и поворот.</p></div>}
-                </aside>}
               </div>
-              <div className="shortcut-hint">Ctrl+D — дублировать · Delete — удалить · Ctrl+A — выбрать всё · Esc — снять выделение · удерживайте Shift — измерения</div>
+              <div className="shortcut-hint">Ctrl/Cmd+D — дублировать · Delete — удалить · Ctrl/Cmd+A — выбрать всё · Esc — снять выделение · Shift — измерения · Пустое пространство — панорама</div>
               </div>
               </div>
-              <div id="history-section"><VersionHistory layoutId={layoutData.layout.id} currentVersion={layoutData.currentVersion} onRestored={handleRestored} onConflict={() => { setHasConflict(true); setError("План изменился в другой сессии. Обновите последнюю версию перед восстановлением."); }} /></div>
-              <div id="gallery-section"><GallerySection layoutId={layoutData.layout.id} media={layoutData.media} isLoading={false} onChange={updateMedia} /></div>
             </>
           )}
         </section>

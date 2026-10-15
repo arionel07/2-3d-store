@@ -332,6 +332,7 @@ app.get("/api/layouts/:layoutId/versions", async (c) => {
       authorName: user.name,
       authorEmail: user.email,
       savedAt: layoutVersions.savedAt,
+      objects: layoutVersions.objects,
     })
     .from(layoutVersions)
     .innerJoin(user, eq(user.id, layoutVersions.authorId))

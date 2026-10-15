@@ -8,42 +8,87 @@ Mobbin references supplied in the task:
 - Visitors map: https://mobbin.com/screens/e3a55696-6526-49bc-b345-1b75da8f57d1
 - Visitors analytics: https://mobbin.com/screens/e19e0a9a-dbc5-4487-9c54-13a4abfcba78
 - Figma editor reference: https://mobbin.com/screens/6f26ce58-d438-4e67-a4db-84d493b94789
+- Gallery concept: attached screen supplied with the gallery task, based on the Visitors visual language.
+- History concept: attached screen supplied with the history task, based on the Visitors visual language.
+- Editor concept: attached screen supplied with the editor task, using Figma's single-panel workspace as the structural reference.
+- Login concept: attached screen supplied with the login task, using the same airy workspace language.
 
 The implementation adapts the composition and rhythm, without copying logos or exact colors.
 
 ## Implementation evidence
 
-- Desktop: `/tmp/store-layout-desktop-redesign.png`, viewport 1440 × 900 CSS px, device scale 1.
-- Mobile: `/tmp/store-layout-mobile-redesign.png`, viewport 390 × 844 CSS px, device scale 1.
-- State: authenticated layout with one valid object, editor open in 2D mode, version history and empty gallery visible.
+- Main screen desktop: `/tmp/store-layout-home-desktop.png`, viewport 1440 × 900 CSS px, device scale 1.
+- Main screen mobile: `/tmp/store-layout-home-mobile.png`, viewport 390 × 844 CSS px, device scale 1.
+- Gallery desktop: `/tmp/store-layout-gallery-desktop.png`, viewport 1440 × 900 CSS px, device scale 1.
+- Gallery mobile: `/tmp/store-layout-gallery-mobile.png`, viewport 390 × 844 CSS px, device scale 1.
+- History desktop: `/tmp/store-layout-history-initial-desktop.png`, viewport 1440 × 900 CSS px, device scale 1.
+- History mobile: `/tmp/store-layout-history-initial-mobile.png`, viewport 390 × 844 CSS px, device scale 1.
+- Editor desktop: `/tmp/store-layout-editor-new-initial-desktop.png`, viewport 1440 × 900 CSS px, device scale 1.
+- Editor mobile: `/tmp/store-layout-editor-new-initial-mobile.png`, viewport 390 × 844 CSS px, device scale 1.
+- 3D editor desktop: `/tmp/store-layout-3d-desktop.png`, viewport 1440 × 900 CSS px, device scale 1.
+- 3D editor mobile: `/tmp/store-layout-3d-mobile.png`, viewport 390 × 844 CSS px, device scale 1, touch-capable context.
+- Login desktop: `/tmp/store-layout-login-desktop.png`, viewport 1440 × 900 CSS px, device scale 1.
+- Login mobile: `/tmp/store-layout-login-mobile.png`, viewport 390 × 844 CSS px, device scale 1.
+- State: authenticated plan with API-backed objects, both 2D and 3D modes tested, and the shared bottom navigation.
 
-The screenshots are full-page captures (1440 × 1615 and 390 × 3076 pixels); the top viewport matches the stated CSS viewport. No density normalization was needed.
+The screenshots are full-page captures at the stated CSS viewport sizes and device scale 1; no density normalization was needed.
 
 ## Comparison
 
-Full view: the overview/editor uses the reference direction of an airy light background, restrained cards, compact top controls, a large central work area, and a dark floating bottom navigation.
+Full view: the history follows the reference direction with an airy light background, a compact heading, generous whitespace, thin separators, a restrained refresh action, and a dark floating bottom navigation.
 
-Focused editor region: the left editor panel contains tools and objects, the center keeps the 2D plan dominant, and the right inspector remains available without changing the existing editing model.
+Focused history region: each row is driven by the saved version snapshot. The row shows a plan thumbnail, version number, Russian date, author, room dimensions, object count, and a yellow «Текущая» badge only for the current version. Previous rows expose «Восстановить».
+
+Responsive region: desktop uses a wide three-column row (thumbnail, metadata, action); narrow screens use a compact three-column row with a scaled snapshot thumbnail and the restore action kept on the same line, leaving space for the fixed bottom menu.
+
+Focused editor region: the previous split store sidebar and right inspector are replaced by one collapsible «Слои / Инструменты и объекты» panel. The remaining area is the interactive Konva canvas with the room, grid, walls, meter labels, centimeter object properties, zoom controls, fit-to-room action, and the existing yellow active «План» navigation item. The 2D room remains the source of truth for the existing 3D view.
+
+Responsive editor region: desktop gives the canvas most of the width; mobile makes the single panel compact and scrollable, then gives the canvas a bounded area above the fixed navigation. The initial mobile canvas ended at y=775 while the navigation began at y=784, so the room is not hidden behind the menu.
+
+Focused 3D region: the same centimeter-based room and objects are converted to meters in the existing React Three Fiber scene. The scene contains a bounded floor grid, restrained boundary walls, simple type-specific boxes, and a yellow selected object. «Сбросить» and «Показать всё» are compact overlays, while the main canvas remains free of permanent panels.
+
+Responsive 3D region: desktop and touch-capable mobile captures keep the whole room visible above the shared navigation. The camera has orbit, wheel/touch zoom, pan, polar-angle and distance limits, plus bounded target panning so the scene cannot be taken below the floor or lost indefinitely.
+
+Focused login region: the unauthenticated state now uses a white, open layout with the existing brand mark at the top left, a centered compact form, thin neutral field borders, a yellow «Войти» action, a password visibility control, and the administrator-access note. It does not render the application navigation, editor panels, or public registration controls.
+
+Responsive login region: the form remains within the viewport at desktop and narrow mobile widths, with reduced heading, field, and button sizing on mobile while preserving readable spacing and the same visual hierarchy.
 
 Primary interactions tested in the rendered app:
 
-- Opening a layout from the overview.
-- Switching the active bottom navigation item between «План» and «Главная».
-- Collapsing the left editor tools panel.
-- Rendering desktop and mobile layouts with no browser console errors.
+- Opening a layout from a store card and navigating to «История».
+- Rendering the API-backed version list in reverse chronological order.
+- Verifying four snapshot thumbnails use only each version's saved room and object data.
+- Verifying the current row has exactly one «Текущая» badge and no restore action.
+- Cancelling the restore confirmation and keeping the list unchanged.
+- Restoring an older version and receiving a new current version from the existing API.
+- Triggering an expected stale-version `409`, showing the Russian conflict message, and exposing the existing reload action.
+- Verifying «История» is active in the shared bottom navigation on desktop and mobile.
+- Verifying the editor has no duplicate store sidebar or right inspector and only one collapsible tool/object/properties panel.
+- Adding, selecting, moving, rotating, duplicating, deleting, and selecting all objects; confirming text fields do not receive editor shortcuts.
+- Zooming with the wheel and controls, fitting the room, panning the workspace from empty canvas space, and showing Shift measurements without moving objects.
+- Verifying valid objects use the green state, invalid geometry uses the red state, saves keep the existing API format, and stale saves retain the existing Russian `409` conflict/reload flow.
+- Switching to 3D without changing the selected layout, keeping the selected object visible in yellow and the sidebar selection intact.
+- Verifying orbit, wheel zoom, «Показать всё», «Сбросить», mobile viewport rendering, and that camera gestures leave the save state unchanged.
+- Verifying the unauthenticated login state has no bottom navigation or sidebar, native required field validation, password show/hide behavior, Russian invalid-credentials feedback, disabled loading state, and successful handoff to the existing authenticated home flow.
+
+## Comparison history
+
+1. Initial implementation added the Visitors/Figma shell and editor tools panel.
+2. The store directory replaced the old overview cards while retaining the existing editor route/state model.
+3. Gallery iteration added a full-screen section, tabs, a compact add dialog, dates, and confirmed deletion while reusing the existing API and media state.
+4. History iteration kept the existing restore and conflict flow, added snapshot-backed thumbnails and moved history into a standalone directory-style screen.
+5. Browser QA initially showed the fixed mobile menu competing with the lower history rows (P2). The history list now uses compact desktop rows, a narrow mobile row layout, scaled thumbnails, and reserved bottom space; the final captures keep the content accessible above the menu.
+6. Browser QA confirmed history navigation, snapshot rendering, confirmation cancellation, successful restore, stale-version conflict handling, and responsive behavior. The browser's single `409 Conflict` console entry was intentionally generated by the conflict test and is not an uncaught application error.
+7. Editor browser QA confirmed the unified panel, desktop/mobile layout, object drag, pan, zoom and fit controls, rotation, keyboard actions, Shift measurements, geometry error state, save state, and stale-version conflict handling. The expected browser `409 Conflict` entry was intentionally generated by that test.
+8. 3D browser QA confirmed the active 3D switch, API-backed object selection, complete-room framing, orbit, zoom, camera reset/fit controls, no console/page errors, and unchanged save state after camera gestures on desktop and touch-capable mobile.
+9. Login browser QA confirmed the new desktop/mobile composition, required fields, password visibility toggle, expected 401 invalid-credentials response translated to Russian, submit loading state, and successful Better Auth callback handoff. The expected 401 console entry was generated by the invalid-login test.
 
 ## Findings
 
 No actionable P0, P1, or P2 visual findings remain.
 
-Intentional P3 difference: navigation icons use the existing lightweight glyph treatment instead of adding an icon dependency; this keeps the MVP dependency-free and avoids copying the reference brand language.
-
-## Comparison history
-
-1. Initial implementation added the Visitors/Figma shell and editor tools panel.
-2. Browser QA found the existing Next dev server serving stale CSS. The server was restarted and the same desktop/mobile states were recaptured with the current CSS bundle.
-3. Final pass confirmed the layout, bottom navigation, panel collapse, and responsive behavior.
+Intentional P3 differences: the implementation uses the existing lightweight glyph treatment for navigation, Konva primitives for the 2D editor, and Three.js primitives for the approximate 3D preview; production data supplies the real saved snapshots and room objects. No reference logos or exact colors were copied.
 
 ## Final result
 
-passed
+final result: passed

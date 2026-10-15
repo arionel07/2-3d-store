@@ -57,10 +57,23 @@ export type LayoutVersion = {
   version: number;
   widthCm: number;
   depthCm: number;
+  objects: LayoutVersionObject[];
   authorId: string;
   authorName: string;
   authorEmail: string;
   savedAt: string;
+};
+
+export type LayoutVersionObject = {
+  id: string;
+  type: string;
+  name: string;
+  xCm: number;
+  yCm: number;
+  widthCm: number;
+  depthCm: number;
+  heightCm: number;
+  rotationDeg: number;
 };
 
 export type ObjectDraft = Omit<LayoutObject, "id" | "layoutId"> & {
