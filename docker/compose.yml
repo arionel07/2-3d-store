@@ -1,0 +1,21 @@
+﻿services:
+  db:
+    image: postgres:17-alpine
+    container_name: store-layout-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: store_layout
+      POSTGRES_USER: store_layout
+      POSTGRES_PASSWORD: store_layout_dev
+    ports:
+      - "5433:5432"
+    volumes:
+      - store_layout_db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U store_layout -d store_layout"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  store_layout_db:
