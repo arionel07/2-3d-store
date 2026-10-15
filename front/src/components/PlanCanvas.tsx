@@ -157,8 +157,6 @@ export default function PlanCanvas({
 
     event.evt.preventDefault();
     const [first, second] = Array.from(event.evt.touches);
-    const rect = containerRef.current.getBoundingClientRect();
-    const center = getTouchCenter(first!, second!, rect);
     const distance = getTouchDistance(first!, second!);
     const initial = pinchRef.current;
     const fitScale = getFitViewport().scale;
@@ -173,8 +171,8 @@ export default function PlanCanvas({
 
     setViewport({
       scale: nextScale,
-      x: center.x - worldPoint.x * nextScale,
-      y: center.y - worldPoint.y * nextScale,
+      x: initial.center.x - worldPoint.x * nextScale,
+      y: initial.center.y - worldPoint.y * nextScale,
     });
   }
 
@@ -262,10 +260,6 @@ export default function PlanCanvas({
         y={viewport.y}
         scaleX={viewport.scale}
         scaleY={viewport.scale}
-        draggable
-        onDragMove={(event) => {
-          setViewport((current) => ({ ...current, x: event.target.x(), y: event.target.y() }));
-        }}
         onMouseDown={(event) => {
           if (event.target === event.target.getStage()) {
             onSelect(null);
