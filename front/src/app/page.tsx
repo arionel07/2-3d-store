@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import {
   CircleUserRound,
+  ChevronRight,
   History as HistoryIcon,
   Home as HomeIcon,
   Images,
@@ -304,9 +305,7 @@ export default function Home() {
     setActiveSection(section);
 
     if (section === "gallery" || section === "history") {
-      window.setTimeout(() => {
-        document.getElementById(`${section}-section`)?.scrollIntoView({ behavior: "smooth", block: "start" });
-      }, 0);
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
   }
 
@@ -474,7 +473,7 @@ export default function Home() {
   }
 
   const saveLabel = {
-    saved: activeSection === "home" ? "Сохранено" : "Все изменения сохранены",
+    saved: activeSection === "home" || activeSection === "gallery" || activeSection === "history" ? "Сохранено" : "Все изменения сохранены",
     unsaved: "Есть несохранённые изменения",
     saving: "Сохранение…",
     error: "Ошибка сохранения",
@@ -495,13 +494,14 @@ export default function Home() {
           <LayoutDashboard className="brand-icon" aria-hidden="true" />
           <div><strong>Планировка</strong><span>Рабочее пространство Vizaje-Nica</span></div>
         </div>
-        {layoutData && activeSection === "plan" && <div className="topbar-context"><span>{selectedStore?.name}</span><b>/</b><strong>{layoutData.layout.name}</strong></div>}
+        {layoutData && activeSection !== "home" && <ChevronRight className="topbar-breadcrumb-chevron" aria-hidden="true" />}
+        {layoutData && activeSection !== "home" && <div className="topbar-context"><span>{selectedStore?.name}</span><b>/</b><strong>{activeSection === "plan" ? layoutData.layout.name : activeSection === "gallery" ? "Галерея" : "История"}</strong></div>}
         {layoutData && activeSection === "plan" ? (
           <div className="view-switch" aria-label="Режим просмотра">
             <button type="button" className={viewMode === "2d" ? "active" : ""} onClick={() => setViewMode("2d")} aria-pressed={viewMode === "2d"}>2D план</button>
             <button type="button" className={viewMode === "3d" ? "active" : ""} onClick={() => setViewMode("3d")} aria-pressed={viewMode === "3d"}>3D вид</button>
           </div>
-        ) : <span className="topbar-note">Внутренний инструмент</span>}
+        ) : activeSection === "home" ? <span className="topbar-note">Внутренний инструмент</span> : <span className="topbar-spacer" aria-hidden="true" />}
         <div className={`save-indicator ${saveState}`}><span className="status-dot" /><span>{saveLabel}</span></div>
         <div className="topbar-account">
           <button
@@ -542,7 +542,6 @@ export default function Home() {
             <div className="workspace-empty"><div className="spinner" /><p>Загрузка планировки…</p></div>
           ) : activeSection === "gallery" ? (
             <div className="gallery-page" id="gallery-section">
-              <div className="gallery-context"><span>{selectedStore?.name}</span><b>/</b><strong>{layoutData.layout.name}</strong></div>
               <GallerySection layoutId={layoutData.layout.id} media={layoutData.media} isLoading={false} onChange={updateMedia} />
             </div>
           ) : activeSection === "history" ? (

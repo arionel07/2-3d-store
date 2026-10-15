@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
+import { Image as ImageIcon, MoreHorizontal, Plus, Search, X } from "lucide-react";
 import {
   createLayoutMedia,
   deleteLayoutMedia,
@@ -59,11 +60,24 @@ export default function GallerySection({
   const [isSaving, setIsSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [mediaScope, setMediaScope] = useState<"all" | "recent">("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const visibleMedia = media.filter((item) => item.kind === activeTab);
-  const photoCount = media.filter((item) => item.kind !== "reference").length;
-  const referenceCount = media.filter((item) => item.kind === "reference").length;
+  const visibleMedia = media.filter((item) => {
+    if (item.kind !== activeTab) return false;
+
+    if (mediaScope === "recent") {
+      if (!item.createdAt) return false;
+      const createdAt = new Date(item.createdAt).getTime();
+      if (Number.isNaN(createdAt) || createdAt < Date.now() - 30 * 24 * 60 * 60 * 1000) return false;
+    }
+
+    const normalizedQuery = searchQuery.trim().toLocaleLowerCase("ru-RU");
+    if (!normalizedQuery) return true;
+    return `${item.caption} ${item.note}`.toLocaleLowerCase("ru-RU").includes(normalizedQuery);
+  });
 
   useEffect(() => {
     if (!isFormOpen) return;
@@ -158,9 +172,8 @@ export default function GallerySection({
     <section className="gallery-section" aria-labelledby="gallery-title">
       <div className="gallery-header">
         <div>
-          <span className="eyebrow">Визуальные материалы</span>
           <h2 id="gallery-title">Галерея</h2>
-          <p>Фотографии магазина и идеи оформления в одном месте.</p>
+          <p>Фотографии магазина и идеи оформления</p>
         </div>
         <button
           type="button"
@@ -168,7 +181,7 @@ export default function GallerySection({
           onClick={openForm}
           disabled={isLoading}
         >
-          <span aria-hidden="true">+</span>
+          <Plus aria-hidden="true" />
           Добавить изображение
         </button>
       </div>
@@ -181,7 +194,7 @@ export default function GallerySection({
           className={activeTab === "photo" ? "active" : ""}
           onClick={() => setActiveTab("photo")}
         >
-          Фото магазина <span>{photoCount}</span>
+          Фото магазина
         </button>
         <button
           type="button"
@@ -190,8 +203,44 @@ export default function GallerySection({
           className={activeTab === "reference" ? "active" : ""}
           onClick={() => setActiveTab("reference")}
         >
-          Идеи <span>{referenceCount}</span>
+          Идеи
         </button>
+      </div>
+
+      <div className="gallery-filters" aria-label="Фильтры галереи">
+        <button
+          type="button"
+          className={mediaScope === "all" ? "active" : ""}
+          onClick={() => setMediaScope("all")}
+        >
+          Все изображения
+        </button>
+        <button
+          type="button"
+          className={mediaScope === "recent" ? "active" : ""}
+          onClick={() => setMediaScope("recent")}
+        >
+          Недавно добавленные
+        </button>
+        {isSearchOpen && (
+          <label className="gallery-search-field">
+            <span className="sr-only">Поиск по галерее</span>
+            <input
+              autoFocus
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Поиск"
+            />
+            <button type="button" onClick={() => { setSearchQuery(""); setIsSearchOpen(false); }} aria-label="Закрыть поиск">
+              <X aria-hidden="true" />
+            </button>
+          </label>
+        )}
+        {!isSearchOpen && (
+          <button type="button" className="gallery-search-toggle" onClick={() => setIsSearchOpen(true)} aria-label="Поиск по галерее">
+            <Search aria-hidden="true" />
+          </button>
+        )}
       </div>
 
       {error && <div className="gallery-error" role="alert">{error}</div>}
@@ -203,10 +252,12 @@ export default function GallerySection({
         </div>
       ) : visibleMedia.length === 0 ? (
         <div className="gallery-empty">
-          <div className="gallery-empty-icon" aria-hidden="true">▧</div>
-          <strong>{activeTab === "photo" ? "Фотографий пока нет" : "Идей пока нет"}</strong>
+          <div className="gallery-empty-icon" aria-hidden="true"><ImageIcon /></div>
+          <strong>{media.length > 0 ? "Ничего не найдено" : activeTab === "photo" ? "Фотографий пока нет" : "Идей пока нет"}</strong>
           <p>
-            {activeTab === "photo"
+            {media.length > 0
+              ? "Измените фильтр или поисковый запрос."
+              : activeTab === "photo"
               ? "Добавьте первое фото магазина с компьютера или по внешней ссылке."
               : "Сохраните первый референс, чтобы собрать визуальное направление планировки."}
           </p>
@@ -220,9 +271,6 @@ export default function GallerySection({
             <article className="media-card" key={item.id}>
               <div className="media-image-wrap">
                 <img src={getMediaAssetUrl(item.url)} alt={item.caption || mediaKindLabel(item.kind)} loading="lazy" />
-                <span className={`media-kind ${item.kind === "reference" ? "reference" : "photo"}`}>
-                  {mediaKindLabel(item.kind)}
-                </span>
               </div>
               <div className="media-card-content">
                 <div className="media-card-heading">
@@ -235,7 +283,7 @@ export default function GallerySection({
                       aria-expanded={openMenuId === item.id}
                       onClick={() => setOpenMenuId((current) => current === item.id ? null : item.id)}
                     >
-                      ···
+                      <MoreHorizontal aria-hidden="true" />
                     </button>
                     {openMenuId === item.id && (
                       <div className="media-menu-popover">
@@ -268,7 +316,7 @@ export default function GallerySection({
                 <span className="eyebrow">Новый материал</span>
                 <h3 id="gallery-dialog-title">Добавить изображение</h3>
               </div>
-              <button type="button" className="icon-button" onClick={closeForm} aria-label="Закрыть">×</button>
+              <button type="button" className="icon-button" onClick={closeForm} aria-label="Закрыть"><X aria-hidden="true" /></button>
             </div>
             <div className="gallery-source-switch" aria-label="Источник изображения">
               <button
