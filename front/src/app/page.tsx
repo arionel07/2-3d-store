@@ -2,6 +2,17 @@
 
 import dynamic from "next/dynamic";
 import {
+  CircleUserRound,
+  History as HistoryIcon,
+  Home as HomeIcon,
+  Images,
+  LayoutDashboard,
+  LogOut,
+  Map,
+  Plus,
+  X,
+} from "lucide-react";
+import {
   useCallback,
   useEffect,
   useMemo,
@@ -108,6 +119,7 @@ export default function Home() {
   const [isLoadingLayout, setIsLoadingLayout] = useState(false);
   const [isStoreModalOpen, setIsStoreModalOpen] = useState(false);
   const [isLayoutModalOpen, setIsLayoutModalOpen] = useState(false);
+  const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const [isEditorToolsCollapsed, setIsEditorToolsCollapsed] = useState(false);
   const [isShiftPressed, setIsShiftPressed] = useState(false);
   const [hasConflict, setHasConflict] = useState(false);
@@ -462,7 +474,7 @@ export default function Home() {
   }
 
   const saveLabel = {
-    saved: "Все изменения сохранены",
+    saved: activeSection === "home" ? "Сохранено" : "Все изменения сохранены",
     unsaved: "Есть несохранённые изменения",
     saving: "Сохранение…",
     error: "Ошибка сохранения",
@@ -477,10 +489,10 @@ export default function Home() {
   }
 
   return (
-    <main className="planner-shell">
+    <main className={`planner-shell ${activeSection}-active`}>
       <header className="topbar">
         <div className="brand-lockup">
-          <span className="brand-mark" aria-hidden="true"><i /><i /><i /><i /></span>
+          <LayoutDashboard className="brand-icon" aria-hidden="true" />
           <div><strong>Планировка</strong><span>Рабочее пространство Vizaje-Nica</span></div>
         </div>
         {layoutData && activeSection === "plan" && <div className="topbar-context"><span>{selectedStore?.name}</span><b>/</b><strong>{layoutData.layout.name}</strong></div>}
@@ -490,11 +502,19 @@ export default function Home() {
             <button type="button" className={viewMode === "3d" ? "active" : ""} onClick={() => setViewMode("3d")} aria-pressed={viewMode === "3d"}>3D вид</button>
           </div>
         ) : <span className="topbar-note">Внутренний инструмент</span>}
-        <div className="topbar-account">
-          <span className="account-name">{authUser?.name ?? authUser?.email}</span>
-          <button type="button" className="signout-button" onClick={() => void handleSignOut()}>Выйти</button>
-        </div>
         <div className={`save-indicator ${saveState}`}><span className="status-dot" /><span>{saveLabel}</span></div>
+        <div className="topbar-account">
+          <button
+            type="button"
+            className="account-avatar"
+            onClick={() => setIsAccountMenuOpen((current) => !current)}
+            aria-label="Открыть меню пользователя"
+            aria-expanded={isAccountMenuOpen}
+          >
+            {authUser?.image ? <img src={authUser.image} alt="" /> : <CircleUserRound aria-hidden="true" />}
+          </button>
+          {isAccountMenuOpen && <div className="account-menu"><span>{authUser?.name ?? authUser?.email}</span><button type="button" onClick={() => void handleSignOut()}><LogOut aria-hidden="true" />Выйти</button></div>}
+        </div>
       </header>
 
       <div className={`app-body ${activeSection === "plan" ? "plan-body" : ""} ${activeSection === "home" ? "home-body" : ""} ${activeSection === "gallery" ? "gallery-body" : ""} ${activeSection === "history" ? "history-body" : ""}`}>
@@ -509,8 +529,8 @@ export default function Home() {
             ) : (
               <section className="stores-home" aria-labelledby="stores-title">
                 <div className="stores-home-header">
-                  <div><span className="eyebrow">Рабочее пространство</span><h1 id="stores-title">Магазины</h1><p>Планы торговых пространств в одном месте</p></div>
-                  <button type="button" className="button home-primary" onClick={() => setIsStoreModalOpen(true)}><span aria-hidden="true">+</span>Новый магазин</button>
+                  <div><h1 id="stores-title">Магазины</h1><p>Планы торговых пространств в одном месте</p></div>
+                  <button type="button" className="button home-primary" onClick={() => setIsStoreModalOpen(true)}><Plus aria-hidden="true" />Новый магазин</button>
                 </div>
                 <div className="stores-home-count">{stores.length} {stores.length === 1 ? "магазин" : stores.length < 5 ? "магазина" : "магазинов"}</div>
                 <div className="store-card-grid">
@@ -571,14 +591,14 @@ export default function Home() {
       </div>
 
       <nav className="floating-nav" aria-label="Разделы приложения">
-        <button type="button" className={activeSection === "home" ? "active" : ""} onClick={() => navigateSection("home")}><span aria-hidden="true">⌂</span>Главная</button>
-        <button type="button" className={activeSection === "plan" ? "active" : ""} onClick={() => navigateSection("plan")} disabled={!layoutData}><span aria-hidden="true">□</span>План</button>
-        <button type="button" className={activeSection === "gallery" ? "active" : ""} onClick={() => navigateSection("gallery")} disabled={!layoutData}><span aria-hidden="true">▧</span>Галерея</button>
-        <button type="button" className={activeSection === "history" ? "active" : ""} onClick={() => navigateSection("history")} disabled={!layoutData}><span aria-hidden="true">↺</span>История</button>
+        <button type="button" className={activeSection === "home" ? "active" : ""} onClick={() => navigateSection("home")}><HomeIcon aria-hidden="true" />Главная</button>
+        <button type="button" className={activeSection === "plan" ? "active" : ""} onClick={() => navigateSection("plan")} disabled={!layoutData}><Map aria-hidden="true" />План</button>
+        <button type="button" className={activeSection === "gallery" ? "active" : ""} onClick={() => navigateSection("gallery")} disabled={!layoutData}><Images aria-hidden="true" />Галерея</button>
+        <button type="button" className={activeSection === "history" ? "active" : ""} onClick={() => navigateSection("history")} disabled={!layoutData}><HistoryIcon aria-hidden="true" />История</button>
       </nav>
 
-      {isStoreModalOpen && <div className="modal-backdrop" role="presentation"><form className="modal-card" onSubmit={(event) => void handleCreateStore(event)}><div className="modal-header"><div><span className="eyebrow">Новое рабочее пространство</span><h2>Создать магазин</h2></div><button type="button" className="icon-button" onClick={() => setIsStoreModalOpen(false)} aria-label="Закрыть">×</button></div><label className="modal-field"><span>Название магазина</span><input required autoFocus value={storeForm.name} onChange={(event) => setStoreForm((current) => ({ ...current, name: event.target.value }))} placeholder="Торговый центр Riverside" /></label><label className="modal-field"><span>Адрес <em>необязательно</em></span><input value={storeForm.address} onChange={(event) => setStoreForm((current) => ({ ...current, address: event.target.value }))} placeholder="Город, улица или внутренний ориентир" /></label><div className="modal-actions"><button type="button" className="button button-quiet" onClick={() => setIsStoreModalOpen(false)}>Отмена</button><button type="submit" className="button button-primary">Создать магазин</button></div></form></div>}
-      {isLayoutModalOpen && selectedStore && <div className="modal-backdrop" role="presentation"><form className="modal-card" onSubmit={(event) => void handleCreateLayout(event)}><div className="modal-header"><div><span className="eyebrow">{selectedStore.name}</span><h2>Создать планировку</h2></div><button type="button" className="icon-button" onClick={() => setIsLayoutModalOpen(false)} aria-label="Закрыть">×</button></div><label className="modal-field"><span>Название планировки</span><input required autoFocus value={layoutForm.name} onChange={(event) => setLayoutForm((current) => ({ ...current, name: event.target.value }))} placeholder="Основной зал" /></label><div className="field-grid two-columns modal-dimensions"><label className="modal-field"><span>Ширина <em>см</em></span><input required min="1" type="number" value={layoutForm.widthCm} onChange={(event) => setLayoutForm((current) => ({ ...current, widthCm: event.target.value }))} /></label><label className="modal-field"><span>Глубина <em>см</em></span><input required min="1" type="number" value={layoutForm.depthCm} onChange={(event) => setLayoutForm((current) => ({ ...current, depthCm: event.target.value }))} /></label></div><p className="dimension-preview">{dimensionPreview}</p><div className="modal-actions"><button type="button" className="button button-quiet" onClick={() => setIsLayoutModalOpen(false)}>Отмена</button><button type="submit" className="button button-primary">Создать планировку</button></div></form></div>}
+      {isStoreModalOpen && <div className="modal-backdrop" role="presentation"><form className="modal-card" onSubmit={(event) => void handleCreateStore(event)}><div className="modal-header"><div><span className="eyebrow">Новое рабочее пространство</span><h2>Создать магазин</h2></div><button type="button" className="icon-button" onClick={() => setIsStoreModalOpen(false)} aria-label="Закрыть"><X aria-hidden="true" /></button></div><label className="modal-field"><span>Название магазина</span><input required autoFocus value={storeForm.name} onChange={(event) => setStoreForm((current) => ({ ...current, name: event.target.value }))} placeholder="Торговый центр Riverside" /></label><label className="modal-field"><span>Адрес <em>необязательно</em></span><input value={storeForm.address} onChange={(event) => setStoreForm((current) => ({ ...current, address: event.target.value }))} placeholder="Город, улица или внутренний ориентир" /></label><div className="modal-actions"><button type="button" className="button button-quiet" onClick={() => setIsStoreModalOpen(false)}>Отмена</button><button type="submit" className="button button-primary">Создать магазин</button></div></form></div>}
+      {isLayoutModalOpen && selectedStore && <div className="modal-backdrop" role="presentation"><form className="modal-card" onSubmit={(event) => void handleCreateLayout(event)}><div className="modal-header"><div><span className="eyebrow">{selectedStore.name}</span><h2>Создать планировку</h2></div><button type="button" className="icon-button" onClick={() => setIsLayoutModalOpen(false)} aria-label="Закрыть"><X aria-hidden="true" /></button></div><label className="modal-field"><span>Название планировки</span><input required autoFocus value={layoutForm.name} onChange={(event) => setLayoutForm((current) => ({ ...current, name: event.target.value }))} placeholder="Основной зал" /></label><div className="field-grid two-columns modal-dimensions"><label className="modal-field"><span>Ширина <em>см</em></span><input required min="1" type="number" value={layoutForm.widthCm} onChange={(event) => setLayoutForm((current) => ({ ...current, widthCm: event.target.value }))} /></label><label className="modal-field"><span>Глубина <em>см</em></span><input required min="1" type="number" value={layoutForm.depthCm} onChange={(event) => setLayoutForm((current) => ({ ...current, depthCm: event.target.value }))} /></label></div><p className="dimension-preview">{dimensionPreview}</p><div className="modal-actions"><button type="button" className="button button-quiet" onClick={() => setIsLayoutModalOpen(false)}>Отмена</button><button type="submit" className="button button-primary">Создать планировку</button></div></form></div>}
     </main>
   );
 }

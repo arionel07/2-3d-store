@@ -420,3 +420,161 @@ body { background: var(--paper); color: var(--ink); }
   .auth-form-panel .auth-submit { min-height: 56px; font-size: 16px; }
   .auth-form-panel .auth-footnote { font-size: 13px; }
 }
+
+/* Home directory: match the supplied white/yellow reference without changing the data flow. */
+.home-active { background: #fff; }
+.home-active .topbar {
+  height: 58px;
+  flex-basis: 58px;
+  padding: 0 26px;
+  border-bottom: 1px solid #e6eaee;
+  color: #18232f;
+  background: #fff;
+}
+.home-active .topbar .brand-lockup { min-width: auto; gap: 22px; }
+.home-active .brand-icon { width: 25px; height: 25px; color: #18232f; stroke-width: 1.7; }
+.home-active .topbar .brand-lockup strong { color: #18232f; font-size: 16px; letter-spacing: -0.035em; }
+.home-active .topbar .brand-lockup > div span, .home-active .topbar-note { display: none; }
+.home-active .save-indicator { order: 3; min-width: auto; margin-left: auto; color: #748198; font-size: 14px; }
+.home-active .save-indicator .status-dot { width: 8px; height: 8px; background: #f3c400; }
+.home-active .topbar-account { position: relative; order: 4; margin-left: 20px; }
+.account-avatar {
+  display: inline-grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid #dfe4e8;
+  border-radius: 50%;
+  color: #68798d;
+  background: #f1f3f3;
+}
+.account-avatar:hover, .account-avatar:focus-visible { border-color: #d7b33e; color: #172431; outline: none; }
+.account-avatar svg { width: 21px; height: 21px; }
+.account-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.account-menu {
+  position: absolute;
+  z-index: 20;
+  top: 43px;
+  right: 0;
+  display: grid;
+  min-width: 180px;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid #e3e7eb;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 16px 34px rgba(28, 43, 57, .12);
+}
+.account-menu > span { overflow: hidden; color: #7a8798; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.account-menu button { display: inline-flex; align-items: center; gap: 7px; padding: 8px 0; border: 0; color: #263342; background: transparent; font-size: 12px; text-align: left; }
+.account-menu button:hover { color: #9d4036; }
+.account-menu button svg { width: 15px; height: 15px; }
+.home-active .home-body { min-height: calc(100vh - 58px); background: #fff; }
+.home-active .home-body .workspace { width: min(100%, 1272px); max-width: none; padding: 49px 12px 145px 0; overflow: visible; }
+.home-active .stores-home { max-width: none; }
+.home-active .stores-home-header { align-items: flex-start; margin-bottom: 20px; }
+.home-active .stores-home-header h1 { margin: 0 0 5px; color: #172431; font-size: 34px; font-weight: 720; letter-spacing: -0.06em; line-height: 1.05; }
+.home-active .stores-home-header p { color: #77859a; font-size: 19px; }
+.home-active .stores-home-count { margin-bottom: 25px; color: #77859a; font-size: 15px; }
+.home-active .home-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 50px;
+  padding-inline: 23px;
+  border-color: #f0c849;
+  border-radius: 11px;
+  color: #1a2525;
+  background: #f7d15b;
+  box-shadow: none;
+  font-size: 15px;
+  margin-top: 5px;
+  min-width: 211px;
+  justify-content: center;
+}
+.home-active .home-primary:hover { border-color: #e9be36; color: #1a2525; background: #f3c84a; box-shadow: none; }
+.home-active .home-primary svg { width: 20px; height: 20px; stroke-width: 2; }
+.home-active .store-card-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; }
+.home-active .store-card { border-color: #e2e7ec; border-radius: 10px; box-shadow: none; }
+.home-active .store-card:hover { border-color: #d7dfe5; box-shadow: none; }
+.home-active .store-card-open { padding: 14px 14px 19px; }
+.home-active .store-plan-thumbnail { aspect-ratio: 1.49; border-radius: 7px; background: #f5f6f7; }
+.home-active .store-card-content { padding-top: 17px; }
+.home-active .store-card-title strong { color: #152330; font-size: 21px; }
+.home-active .store-card-title svg { width: 21px; height: 21px; flex: 0 0 auto; color: #627188; stroke-width: 1.7; }
+.home-active .store-card-content p { margin-top: 10px; color: #7c899d; font-size: 14px; }
+.home-active .store-card-meta { margin-top: 17px; color: #768399; font-size: 14px; }
+.home-active .store-card-meta span:last-child { color: #768399; }
+.home-active .store-card-create { align-items: center; color: #1e2b3a; }
+.home-active .store-card-create:hover { color: #8b6a00; }
+.home-active .store-card-create svg { width: 16px; height: 16px; stroke-width: 2; }
+.home-active .home-body .workspace-empty .button-primary,
+.home-active .modal-actions .button-primary {
+  border-color: #f0c849;
+  color: #1a2525;
+  background: #f7d15b;
+  box-shadow: none;
+}
+.home-active .home-body .workspace-empty .button-primary:hover,
+.home-active .modal-actions .button-primary:hover { background: #f3c84a; }
+.home-active .modal-card { border-color: #e5e0c8; box-shadow: 0 24px 70px rgba(35, 39, 29, .14); }
+.home-active .modal-field input:focus { border-color: #d8b234; box-shadow: 0 0 0 3px rgba(240, 200, 73, .16); }
+.home-active .modal-header .icon-button:hover { border-color: #e0bd42; color: #6e5600; background: #fff8df; }
+.home-active .modal-header .icon-button svg { width: 17px; height: 17px; }
+.home-active .floating-nav {
+  right: auto;
+  bottom: 40px;
+  left: 50%;
+  display: inline-flex;
+  width: auto;
+  padding: 6px;
+  transform: translateX(-50%);
+  border: 1px solid #363636;
+  border-radius: 40px;
+  background: #202020;
+  box-shadow: 0 12px 28px rgba(22, 28, 32, .18);
+}
+.home-active .floating-nav button {
+  display: inline-flex;
+  min-width: 70px;
+  min-height: 62px;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 10px 8px;
+  border-radius: 31px;
+  color: #f3f3f0;
+  background: transparent;
+  font-size: 12px;
+}
+.home-active .floating-nav button:hover:not(:disabled) { color: #fff; background: #2d2d2d; }
+.home-active .floating-nav button.active { color: #1d2929; background: #fff7d9; }
+.home-active .floating-nav button.active:hover { color: #1d2929; background: #fff1be; }
+.home-active .floating-nav button svg { width: 21px; height: 21px; stroke-width: 1.8; }
+@media (max-width: 1272px) {
+  .home-active .home-body .workspace { width: auto; margin-inline: 24px; padding-right: 0; }
+}
+@media (max-width: 820px) {
+  .home-active .topbar { padding-inline: 20px; }
+  .home-active .home-body .workspace { margin-inline: 18px; padding-top: 38px; }
+  .home-active .stores-home-header { flex-direction: column; gap: 23px; }
+  .home-active .stores-home-header p { font-size: 17px; }
+  .home-active .home-primary { align-self: flex-start; }
+  .home-active .store-card-grid { grid-template-columns: 1fr; }
+  .home-active .floating-nav { position: static; bottom: auto; margin: 0 auto 18px; transform: none; }
+}
+@media (max-width: 520px) {
+  .home-active .topbar { padding-inline: 16px; }
+  .home-active .save-indicator { gap: 0; min-width: 8px; }
+  .home-active .save-indicator > span:last-child { display: none; }
+  .home-active .topbar-account { margin-left: 12px; }
+  .home-active .home-body .workspace { margin-inline: 18px; padding-top: 32px; }
+  .home-active .stores-home-header h1 { font-size: 32px; }
+  .home-active .stores-home-header p { font-size: 16px; }
+  .home-active .store-card-grid { gap: 14px; }
+  .home-active .floating-nav { right: auto; bottom: auto; left: auto; width: calc(100% - 36px); margin: 0 auto 12px; transform: none; }
+  .home-active .floating-nav button { min-width: 0; flex: 1; padding-inline: 5px; font-size: 10px; }
+  .home-active .floating-nav button svg { width: 19px; height: 19px; }
+}

@@ -4,6 +4,8 @@ export type LayoutSummary = {
   name: string;
   widthCm: number;
   depthCm: number;
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 export type Store = {
@@ -11,6 +13,8 @@ export type Store = {
   name: string;
   address: string;
   layouts: LayoutSummary[];
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 export type LayoutObject = {
