@@ -1,30 +1,90 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Group, Layer, Line, Rect, Stage, Text } from "react-konva";
+import { getObjectCorners, type LayoutMeasurements } from "../lib/geometry";
 import type { LayoutObject } from "../lib/types";
 
 type PlanCanvasProps = {
   room: { widthCm: number; depthCm: number };
   objects: LayoutObject[];
   selectedObjectId: string | null;
+  selectedObjectIds: string[];
   validity: Record<string, boolean>;
+  measurements: LayoutMeasurements | null;
+  showMeasurements: boolean;
   onSelect: (id: string | null) => void;
   onMove: (id: string, xCm: number, yCm: number) => void;
 };
 
+type Viewport = {
+  scale: number;
+  x: number;
+  y: number;
+};
+
+type PinchState = {
+  distance: number;
+  center: { x: number; y: number };
+  viewport: Viewport;
+};
+
 const GRID_SIZE_CM = 50;
+const MIN_SCALE_MULTIPLIER = 0.35;
+const MAX_SCALE_MULTIPLIER = 5;
+
+function getTouchCenter(first: Touch, second: Touch, rect: DOMRect) {
+  return {
+    x: (first.clientX + second.clientX) / 2 - rect.left,
+    y: (first.clientY + second.clientY) / 2 - rect.top,
+  };
+}
+
+function getTouchDistance(first: Touch, second: Touch) {
+  return Math.hypot(first.clientX - second.clientX, first.clientY - second.clientY);
+}
+
+function formatDistance(valueCm: number) {
+  const rounded = Math.round(valueCm * 10) / 10;
+  if (rounded >= 100) {
+    return `${rounded.toLocaleString("ru-RU")} см (${(rounded / 100).toLocaleString("ru-RU", { maximumFractionDigits: 2 })} м)`;
+  }
+  return `${rounded.toLocaleString("ru-RU")} см`;
+}
 
 export default function PlanCanvas({
   room,
   objects,
   selectedObjectId,
+  selectedObjectIds,
   validity,
+  measurements,
+  showMeasurements,
   onSelect,
   onMove,
 }: PlanCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const pinchRef = useRef<PinchState | null>(null);
   const [size, setSize] = useState({ width: 760, height: 620 });
+  const [viewport, setViewport] = useState<Viewport>({ scale: 1, x: 44, y: 44 });
+
+  const getFitViewport = useCallback(() => {
+    const padding = 44;
+    const scale = Math.min(
+      (size.width - padding * 2) / room.widthCm,
+      (size.height - padding * 2) / room.depthCm,
+    );
+
+    return {
+      scale: Math.max(0.01, scale),
+      x: (size.width - room.widthCm * scale) / 2,
+      y: (size.height - room.depthCm * scale) / 2,
+    };
+  }, [room.depthCm, room.widthCm, size.height, size.width]);
+
+  const fitRoom = useCallback(() => {
+    setViewport(getFitViewport());
+  }, [getFitViewport]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -44,24 +104,105 @@ export default function PlanCanvas({
     return () => observer.disconnect();
   }, []);
 
-  const padding = 44;
-  const scale = Math.min(
-    (size.width - padding * 2) / room.widthCm,
-    (size.height - padding * 2) / room.depthCm,
-  );
-  const roomWidth = room.widthCm * scale;
-  const roomHeight = room.depthCm * scale;
-  const roomX = (size.width - roomWidth) / 2;
-  const roomY = (size.height - roomHeight) / 2;
+  useEffect(() => {
+    fitRoom();
+  }, [fitRoom]);
+
+  function handleWheel(event: { evt: WheelEvent; target: { getStage: () => any } }) {
+    event.evt.preventDefault();
+    const pointer = event.target.getStage()?.getPointerPosition();
+
+    if (!pointer) {
+      return;
+    }
+
+    const direction = event.evt.deltaY > 0 ? 0.9 : 1.1;
+    const fitScale = getFitViewport().scale;
+    const nextScale = Math.min(
+      fitScale * MAX_SCALE_MULTIPLIER,
+      Math.max(fitScale * MIN_SCALE_MULTIPLIER, viewport.scale * direction),
+    );
+    const worldPoint = {
+      x: (pointer.x - viewport.x) / viewport.scale,
+      y: (pointer.y - viewport.y) / viewport.scale,
+    };
+
+    setViewport({
+      scale: nextScale,
+      x: pointer.x - worldPoint.x * nextScale,
+      y: pointer.y - worldPoint.y * nextScale,
+    });
+  }
+
+  function handleTouchStart(event: { evt: TouchEvent; target: { getStage: () => any } }) {
+    if (event.evt.touches.length !== 2 || !containerRef.current) {
+      return;
+    }
+
+    event.evt.preventDefault();
+    event.target.getStage()?.stopDrag();
+    const [first, second] = Array.from(event.evt.touches);
+    const rect = containerRef.current.getBoundingClientRect();
+    pinchRef.current = {
+      distance: getTouchDistance(first!, second!),
+      center: getTouchCenter(first!, second!, rect),
+      viewport,
+    };
+  }
+
+  function handleTouchMove(event: { evt: TouchEvent }) {
+    if (event.evt.touches.length !== 2 || !pinchRef.current || !containerRef.current) {
+      return;
+    }
+
+    event.evt.preventDefault();
+    const [first, second] = Array.from(event.evt.touches);
+    const rect = containerRef.current.getBoundingClientRect();
+    const center = getTouchCenter(first!, second!, rect);
+    const distance = getTouchDistance(first!, second!);
+    const initial = pinchRef.current;
+    const fitScale = getFitViewport().scale;
+    const nextScale = Math.min(
+      fitScale * MAX_SCALE_MULTIPLIER,
+      Math.max(fitScale * MIN_SCALE_MULTIPLIER, initial.viewport.scale * (distance / initial.distance)),
+    );
+    const worldPoint = {
+      x: (initial.center.x - initial.viewport.x) / initial.viewport.scale,
+      y: (initial.center.y - initial.viewport.y) / initial.viewport.scale,
+    };
+
+    setViewport({
+      scale: nextScale,
+      x: center.x - worldPoint.x * nextScale,
+      y: center.y - worldPoint.y * nextScale,
+    });
+  }
+
+  function handleTouchEnd() {
+    pinchRef.current = null;
+  }
+
+  const selectedObject = objects.find((object) => object.id === selectedObjectId);
+  const selectedCorners = selectedObject ? getObjectCorners(selectedObject) : [];
+  const selectedBounds = selectedCorners.length > 0
+    ? {
+        minX: Math.min(...selectedCorners.map((point) => point.x)),
+        maxX: Math.max(...selectedCorners.map((point) => point.x)),
+        minY: Math.min(...selectedCorners.map((point) => point.y)),
+        maxY: Math.max(...selectedCorners.map((point) => point.y)),
+      }
+    : null;
+  const labelFontSize = 11 / viewport.scale;
+  const lineWidth = 1 / viewport.scale;
   const gridLines = [];
 
   for (let x = 0; x <= room.widthCm; x += GRID_SIZE_CM) {
     gridLines.push(
       <Line
         key={`vertical-${x}`}
-        points={[roomX + x * scale, roomY, roomX + x * scale, roomY + roomHeight]}
+        points={[x, 0, x, room.depthCm]}
         stroke="#dce6ed"
-        strokeWidth={x % 200 === 0 ? 1 : 0.6}
+        strokeWidth={(x % 200 === 0 ? 1 : 0.6) / viewport.scale}
         listening={false}
       />,
     );
@@ -71,73 +212,114 @@ export default function PlanCanvas({
     gridLines.push(
       <Line
         key={`horizontal-${y}`}
-        points={[roomX, roomY + y * scale, roomX + roomWidth, roomY + y * scale]}
+        points={[0, y, room.widthCm, y]}
         stroke="#dce6ed"
-        strokeWidth={y % 200 === 0 ? 1 : 0.6}
+        strokeWidth={(y % 200 === 0 ? 1 : 0.6) / viewport.scale}
         listening={false}
       />,
     );
   }
+
+  const measurementLines = measurements && selectedBounds && showMeasurements
+    ? [
+        {
+          key: "left",
+          points: [0, (selectedBounds.minY + selectedBounds.maxY) / 2, selectedBounds.minX, (selectedBounds.minY + selectedBounds.maxY) / 2],
+          label: formatDistance(measurements.walls.leftCm),
+          x: measurements.walls.leftCm / 2,
+          y: (selectedBounds.minY + selectedBounds.maxY) / 2,
+        },
+        {
+          key: "right",
+          points: [selectedBounds.maxX, (selectedBounds.minY + selectedBounds.maxY) / 2, room.widthCm, (selectedBounds.minY + selectedBounds.maxY) / 2],
+          label: formatDistance(measurements.walls.rightCm),
+          x: selectedBounds.maxX + measurements.walls.rightCm / 2,
+          y: (selectedBounds.minY + selectedBounds.maxY) / 2,
+        },
+        {
+          key: "top",
+          points: [(selectedBounds.minX + selectedBounds.maxX) / 2, 0, (selectedBounds.minX + selectedBounds.maxX) / 2, selectedBounds.minY],
+          label: formatDistance(measurements.walls.topCm),
+          x: (selectedBounds.minX + selectedBounds.maxX) / 2,
+          y: measurements.walls.topCm / 2,
+        },
+        {
+          key: "bottom",
+          points: [(selectedBounds.minX + selectedBounds.maxX) / 2, selectedBounds.maxY, (selectedBounds.minX + selectedBounds.maxX) / 2, room.depthCm],
+          label: formatDistance(measurements.walls.bottomCm),
+          x: (selectedBounds.minX + selectedBounds.maxX) / 2,
+          y: selectedBounds.maxY + measurements.walls.bottomCm / 2,
+        },
+      ]
+    : [];
 
   return (
     <div className="plan-canvas" ref={containerRef}>
       <Stage
         width={size.width}
         height={size.height}
+        x={viewport.x}
+        y={viewport.y}
+        scaleX={viewport.scale}
+        scaleY={viewport.scale}
+        draggable
+        onDragMove={(event) => {
+          setViewport((current) => ({ ...current, x: event.target.x(), y: event.target.y() }));
+        }}
         onMouseDown={(event) => {
           if (event.target === event.target.getStage()) {
             onSelect(null);
           }
         }}
+        onWheel={handleWheel}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
       >
         <Layer>
           <Rect
-            x={roomX}
-            y={roomY}
-            width={roomWidth}
-            height={roomHeight}
+            x={0}
+            y={0}
+            width={room.widthCm}
+            height={room.depthCm}
             fill="#fbfdfe"
             stroke="#253748"
-            strokeWidth={8}
+            strokeWidth={8 / viewport.scale}
             shadowColor="#a9bac6"
-            shadowBlur={14}
+            shadowBlur={14 / viewport.scale}
             shadowOpacity={0.2}
           />
           {gridLines}
           <Text
-            x={roomX}
-            y={roomY - 27}
-            text={`${room.widthCm} cm`}
+            x={0}
+            y={-27 / viewport.scale}
+            text={`${room.widthCm} см`}
             fill="#738392"
-            fontSize={11}
-            width={roomWidth}
+            fontSize={labelFontSize}
+            width={room.widthCm}
             align="center"
           />
           <Text
-            x={roomX - 38}
-            y={roomY}
-            text={`${room.depthCm} cm`}
+            x={-38 / viewport.scale}
+            y={0}
+            text={`${room.depthCm} см`}
             fill="#738392"
-            fontSize={11}
+            fontSize={labelFontSize}
             rotation={-90}
           />
           {objects.map((object) => {
-            const isSelected = object.id === selectedObjectId;
+            const isSelected = selectedObjectIds.includes(object.id);
             const isValid = validity[object.id] ?? true;
-            const width = object.widthCm * scale;
-            const depth = object.depthCm * scale;
-            const centerX = roomX + (object.xCm + object.widthCm / 2) * scale;
-            const centerY = roomY + (object.yCm + object.depthCm / 2) * scale;
             const color = isValid ? "#77c9bd" : "#ef8e7b";
             const fill = isValid ? "#d8f2ed" : "#ffe2dc";
 
             return (
               <Group
                 key={object.id}
-                x={centerX}
-                y={centerY}
-                offsetX={width / 2}
-                offsetY={depth / 2}
+                x={object.xCm + object.widthCm / 2}
+                y={object.yCm + object.depthCm / 2}
+                offsetX={object.widthCm / 2}
+                offsetY={object.depthCm / 2}
                 rotation={object.rotationDeg}
                 draggable
                 onClick={() => onSelect(object.id)}
@@ -146,39 +328,61 @@ export default function PlanCanvas({
                   const node = event.target;
                   onMove(
                     object.id,
-                    Math.round((node.x() - roomX) / scale - object.widthCm / 2),
-                    Math.round((node.y() - roomY) / scale - object.depthCm / 2),
+                    Math.round(node.x() - object.widthCm / 2),
+                    Math.round(node.y() - object.depthCm / 2),
                   );
                 }}
               >
                 <Rect
                   x={0}
                   y={0}
-                  width={width}
-                  height={depth}
+                  width={object.widthCm}
+                  height={object.depthCm}
                   fill={fill}
                   stroke={isSelected ? "#0f766e" : color}
-                  strokeWidth={isSelected ? 3 : 2}
-                  cornerRadius={4}
+                  strokeWidth={(isSelected ? 3 : 2) / viewport.scale}
+                  cornerRadius={4 / viewport.scale}
                   shadowColor="#6c7d89"
-                  shadowBlur={isSelected ? 10 : 4}
+                  shadowBlur={isSelected ? 10 / viewport.scale : 4 / viewport.scale}
                   shadowOpacity={0.15}
                 />
                 <Text
                   x={0}
-                  y={Math.max(5, depth / 2 - 7)}
+                  y={Math.max(5 / viewport.scale, object.depthCm / 2 - 7 / viewport.scale)}
                   text={object.name}
-                  width={width}
+                  width={object.widthCm}
                   align="center"
                   fill="#183247"
-                  fontSize={Math.max(10, Math.min(14, width / 9))}
+                  fontSize={Math.max(10 / viewport.scale, Math.min(14 / viewport.scale, object.widthCm / 9))}
                   listening={false}
                 />
               </Group>
             );
           })}
+          {measurementLines.map((measurement) => (
+            <Group key={measurement.key} listening={false}>
+              <Line
+                points={measurement.points}
+                stroke="#7b8d98"
+                strokeWidth={lineWidth}
+                dash={[4 / viewport.scale, 4 / viewport.scale]}
+              />
+              <Text
+                x={measurement.x - 36 / viewport.scale}
+                y={measurement.y - 8 / viewport.scale}
+                width={72 / viewport.scale}
+                text={measurement.label}
+                align="center"
+                fill="#526979"
+                fontSize={9 / viewport.scale}
+              />
+            </Group>
+          ))}
         </Layer>
       </Stage>
+      <button type="button" className="canvas-fit-button" onClick={fitRoom}>
+        Показать всё помещение
+      </button>
     </div>
   );
 }

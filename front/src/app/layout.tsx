@@ -2,10 +2,10 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Store Layout Planner",
-  description: "A fast visual planning tool for Vizaje-Nica stores.",
+  title: "Планировщик магазинов",
+  description: "Инструмент планирования магазинов Vizaje-Nica.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
-  return <html lang="en"><body>{children}</body></html>;
+  return <html lang="ru"><body>{children}</body></html>;
 }

@@ -1,6 +1,9 @@
 "use client";
 
-import { Canvas } from "@react-three/fiber";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import { TOUCH } from "three";
 import type { LayoutObject } from "../lib/types";
 import { isObjectValid } from "../lib/geometry";
 
@@ -9,7 +12,50 @@ type Scene3DProps = {
   objects: LayoutObject[];
 };
 
-function Scene({ room, objects }: Scene3DProps) {
+type CameraControlsProps = {
+  onReady: (reset: () => void) => void;
+};
+
+function CameraControls({ onReady }: CameraControlsProps) {
+  const { camera, gl } = useThree();
+  const controlsRef = useRef<OrbitControls | null>(null);
+
+  useEffect(() => {
+    const controls = new OrbitControls(camera, gl.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.08;
+    controls.enablePan = true;
+    controls.screenSpacePanning = true;
+    controls.minDistance = 2;
+    controls.maxDistance = 80;
+    controls.touches.ONE = TOUCH.ROTATE;
+    controls.touches.TWO = TOUCH.DOLLY_PAN;
+    controls.target.set(0, 0, 0);
+    controls.update();
+    controlsRef.current = controls;
+
+    const initialPosition = camera.position.clone();
+    const reset = () => {
+      camera.position.copy(initialPosition);
+      controls.target.set(0, 0, 0);
+      controls.update();
+    };
+    onReady(reset);
+
+    return () => {
+      controls.dispose();
+      controlsRef.current = null;
+    };
+  }, [camera, gl, onReady]);
+
+  useFrame(() => {
+    controlsRef.current?.update();
+  });
+
+  return null;
+}
+
+function Scene({ room, objects, onReady }: Scene3DProps & CameraControlsProps) {
   const roomWidth = room.widthCm / 100;
   const roomDepth = room.depthCm / 100;
   const maxDimension = Math.max(roomWidth, roomDepth);
@@ -20,6 +66,7 @@ function Scene({ room, objects }: Scene3DProps) {
       gl={{ antialias: true }}
       style={{ background: "#e9f0f4" }}
     >
+      <CameraControls onReady={onReady} />
       <ambientLight intensity={1.8} />
       <directionalLight position={[4, 8, 5]} intensity={2.4} />
       <group position={[-roomWidth / 2, 0, -roomDepth / 2]}>
@@ -70,5 +117,24 @@ function Scene({ room, objects }: Scene3DProps) {
 }
 
 export default function Scene3D(props: Scene3DProps) {
-  return <Scene {...props} />;
+  const resetRef = useRef<(() => void) | null>(null);
+  const [isReady, setIsReady] = useState(false);
+  const handleReady = useCallback((reset: () => void) => {
+    resetRef.current = reset;
+    setIsReady(true);
+  }, []);
+
+  return (
+    <div className="scene-3d-inner">
+      <Scene {...props} onReady={handleReady} />
+      <button
+        type="button"
+        className="scene-reset-button"
+        onClick={() => resetRef.current?.()}
+        disabled={!isReady}
+      >
+        Сбросить вид
+      </button>
+    </div>
+  );
 }

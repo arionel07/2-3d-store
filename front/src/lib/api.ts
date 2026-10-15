@@ -56,7 +56,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
   if (!response.ok) {
     throw new ApiError(
-      body?.error ?? `Request failed with status ${response.status}`,
+      body?.error ?? `Ошибка запроса (${response.status})`,
       response.status,
     );
   }
@@ -65,11 +65,29 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export function getApiErrorMessage(error: unknown) {
+  const translate = (message: string) => {
+    const knownMessages: Record<string, string> = {
+      "Authentication required": "Требуется войти в аккаунт",
+      "Authentication unavailable": "Сервис авторизации временно недоступен",
+      "Store not found": "Магазин не найден",
+      "Layout not found": "Планировка не найдена",
+      "Media not found": "Изображение не найдено",
+      "Version not found": "Версия не найдена",
+      "Layout objects are outside the room or overlap.": "Объекты выходят за границы помещения или пересекаются.",
+      "Layout changed since this plan was loaded. Reload it before saving.": "План изменился после загрузки. Обновите последнюю версию перед сохранением.",
+      "Layout changed since this plan was loaded. Reload it before restoring.": "План изменился после загрузки. Обновите последнюю версию перед восстановлением.",
+      "Only JPEG, PNG, and WebP images are supported": "Поддерживаются только изображения JPEG, PNG и WebP",
+      "Media file not found": "Файл изображения не найден",
+      "Internal server error": "Внутренняя ошибка сервера",
+    };
+    return knownMessages[message] ?? message;
+  };
+
   if (error instanceof ApiError) {
-    return error.message;
+    return translate(error.message);
   }
 
-  return error instanceof Error ? error.message : "Something went wrong";
+  return error instanceof Error ? translate(error.message) : "Произошла неизвестная ошибка";
 }
 
 export function isApiConflict(error: unknown) {

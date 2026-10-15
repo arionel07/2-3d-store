@@ -21,7 +21,7 @@ export default function LoginForm({ onAuthenticated }: LoginFormProps) {
     try {
       const response = await signIn(email, password);
       if (!response?.user) {
-        throw new Error("The server did not return an authenticated user");
+        throw new Error("Сервер не вернул вошедшего пользователя");
       }
       onAuthenticated(response.user);
     } catch (requestError) {
@@ -36,26 +36,26 @@ export default function LoginForm({ onAuthenticated }: LoginFormProps) {
       <section className="auth-card" aria-labelledby="login-title">
         <div className="brand-lockup auth-brand">
           <span className="brand-mark" aria-hidden="true"><i /><i /><i /><i /></span>
-          <div><strong>Store Layout Planner</strong><span>Vizaje-Nica workspace</span></div>
+          <div><strong>Планировщик магазинов</strong><span>Рабочее пространство Vizaje-Nica</span></div>
         </div>
-        <span className="eyebrow">Private workspace</span>
-        <h1 id="login-title">Welcome back.</h1>
-        <p className="auth-intro">Sign in with the account created for your team.</p>
+        <span className="eyebrow">Закрытое рабочее пространство</span>
+        <h1 id="login-title">С возвращением.</h1>
+        <p className="auth-intro">Войдите с помощью аккаунта, созданного для вашей команды.</p>
         <form className="auth-form" onSubmit={(event) => void handleSubmit(event)}>
           <label className="modal-field">
-            <span>Email</span>
+            <span>Электронная почта</span>
             <input type="email" autoComplete="username" required value={email} onChange={(event) => setEmail(event.target.value)} />
           </label>
           <label className="modal-field">
-            <span>Password</span>
+            <span>Пароль</span>
             <input type="password" autoComplete="current-password" required value={password} onChange={(event) => setPassword(event.target.value)} />
           </label>
           {error && <p className="auth-error" role="alert">{error}</p>}
           <button className="button button-primary auth-submit" type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Signing in…" : "Sign in"}
+            {isSubmitting ? "Вход…" : "Войти"}
           </button>
         </form>
-        <p className="auth-footnote">Access is managed internally. There is no public sign-up.</p>
+        <p className="auth-footnote">Доступ управляется внутри команды. Публичной регистрации нет.</p>
       </section>
     </main>
   );

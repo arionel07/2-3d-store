@@ -26,7 +26,7 @@ const emptyForm = {
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 
 function mediaKindLabel(kind: LayoutMedia["kind"]) {
-  return kind === "reference" ? "Reference" : "Store photo";
+  return kind === "reference" ? "Референс" : "Фото магазина";
 }
 
 export default function GallerySection({
@@ -50,7 +50,7 @@ export default function GallerySection({
 
     try {
       if (sourceMode === "file" && !selectedFile) {
-        setError("Choose a JPEG, PNG, or WebP file first");
+      setError("Сначала выберите файл JPEG, PNG или WebP");
         return;
       }
 
@@ -96,9 +96,9 @@ export default function GallerySection({
     <section className="gallery-section" aria-labelledby="gallery-title">
       <div className="gallery-header">
         <div>
-          <span className="eyebrow">References</span>
-          <h2 id="gallery-title">Gallery</h2>
-          <p>Keep store photos and visual references close to the plan.</p>
+          <span className="eyebrow">Визуальные материалы</span>
+          <h2 id="gallery-title">Галерея</h2>
+          <p>Храните фото магазина и визуальные референсы рядом с планировкой.</p>
         </div>
         <button
           type="button"
@@ -109,7 +109,7 @@ export default function GallerySection({
           }}
           disabled={isLoading}
         >
-          {isFormOpen ? "Close" : "+ Add image"}
+          {isFormOpen ? "Закрыть" : "+ Добавить изображение"}
         </button>
       </div>
 
@@ -117,7 +117,7 @@ export default function GallerySection({
 
       {isFormOpen && (
         <form className="gallery-form" onSubmit={(event) => void handleSubmit(event)}>
-          <div className="gallery-source-switch" aria-label="Image source">
+          <div className="gallery-source-switch" aria-label="Источник изображения">
             <button
               type="button"
               className={sourceMode === "url" ? "active" : ""}
@@ -126,7 +126,7 @@ export default function GallerySection({
                 setError(null);
               }}
             >
-              External URL
+              Внешняя ссылка
             </button>
             <button
               type="button"
@@ -136,13 +136,13 @@ export default function GallerySection({
                 setError(null);
               }}
             >
-              From computer
+              С компьютера
             </button>
           </div>
           <div className="gallery-form-grid">
             {sourceMode === "url" ? (
               <label className="modal-field gallery-url-field" key="external-url">
-                <span>Image URL</span>
+                <span>Ссылка на изображение</span>
                 <input
                   required
                   type="url"
@@ -153,7 +153,7 @@ export default function GallerySection({
               </label>
             ) : (
               <label className="modal-field gallery-url-field" key="local-file">
-                <span>Image file <em>JPEG, PNG or WebP · max 10 MB</em></span>
+                <span>Файл изображения <em>JPEG, PNG или WebP · максимум 10 МБ</em></span>
                 <input
                   required
                   type="file"
@@ -162,18 +162,18 @@ export default function GallerySection({
                     const file = event.target.files?.[0] ?? null;
                     if (file && file.size > MAX_UPLOAD_BYTES) {
                       setSelectedFile(null);
-                      setError("Image must be 10 MB or smaller");
+                      setError("Размер изображения не должен превышать 10 МБ");
                       return;
                     }
                     setError(null);
                     setSelectedFile(file);
                   }}
                 />
-                {selectedFile && <small className="selected-file">Selected: {selectedFile.name}</small>}
+                {selectedFile && <small className="selected-file">Выбран файл: {selectedFile.name}</small>}
               </label>
             )}
             <label className="modal-field">
-              <span>Type</span>
+              <span>Тип</span>
               <select
                 value={form.kind}
                 onChange={(event) => setForm((current) => ({
@@ -181,25 +181,25 @@ export default function GallerySection({
                   kind: event.target.value as "photo" | "reference",
                 }))}
               >
-                <option value="photo">Store photo</option>
-                <option value="reference">Reference</option>
+                <option value="photo">Фото магазина</option>
+                <option value="reference">Референс</option>
               </select>
             </label>
             <label className="modal-field">
-              <span>Caption</span>
+              <span>Подпись</span>
               <input
                 value={form.caption}
                 onChange={(event) => setForm((current) => ({ ...current, caption: event.target.value }))}
-                placeholder="Entrance display"
+                placeholder="Витрина у входа"
               />
             </label>
             <label className="modal-field gallery-note-field">
-              <span>Note</span>
+              <span>Заметка</span>
               <textarea
                 rows={2}
                 value={form.note}
                 onChange={(event) => setForm((current) => ({ ...current, note: event.target.value }))}
-                placeholder="What should the team notice?"
+                placeholder="На что команде обратить внимание?"
               />
             </label>
           </div>
@@ -213,10 +213,10 @@ export default function GallerySection({
                 setIsFormOpen(false);
               }}
             >
-              Cancel
+              Отмена
             </button>
             <button type="submit" className="button button-primary" disabled={isSaving}>
-              {isSaving ? "Adding…" : "Add image"}
+              {isSaving ? "Добавление…" : "Добавить изображение"}
             </button>
           </div>
         </form>
@@ -225,13 +225,13 @@ export default function GallerySection({
       {isLoading ? (
         <div className="gallery-loading">
           <div className="spinner" />
-          <span>Loading gallery…</span>
+          <span>Загрузка галереи…</span>
         </div>
       ) : media.length === 0 ? (
         <div className="gallery-empty">
           <div className="gallery-empty-icon" aria-hidden="true">▧</div>
-          <strong>No images yet</strong>
-          <p>Add a store photo or reference by URL to keep visual context with this plan.</p>
+          <strong>Изображений пока нет</strong>
+          <p>Добавьте фото магазина или референс по ссылке, чтобы сохранить визуальный контекст планировки.</p>
         </div>
       ) : (
         <div className="gallery-grid">
@@ -245,13 +245,13 @@ export default function GallerySection({
               </div>
               <div className="media-card-content">
                 <div className="media-card-heading">
-                  <strong>{item.caption || "Untitled image"}</strong>
+                  <strong>{item.caption || "Изображение без подписи"}</strong>
                   <button
                     type="button"
                     className="media-delete"
                     onClick={() => void handleDelete(item)}
                     disabled={deletingId === item.id}
-                    aria-label={`Delete ${item.caption || "image"}`}
+                    aria-label={`Удалить ${item.caption || "изображение"}`}
                   >
                     {deletingId === item.id ? "…" : "×"}
                   </button>

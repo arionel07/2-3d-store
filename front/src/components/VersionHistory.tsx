@@ -21,7 +21,7 @@ type VersionHistoryProps = {
 };
 
 function formatSavedAt(value: string) {
-  return new Intl.DateTimeFormat(undefined, {
+  return new Intl.DateTimeFormat("ru-RU", {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));
@@ -55,7 +55,7 @@ export default function VersionHistory({
   }, [currentVersion, loadVersions]);
 
   async function handleRestore(version: LayoutVersion) {
-    if (!window.confirm(`Restore version ${version.version}? This will create a new version.`)) {
+    if (!window.confirm(`Восстановить версию ${version.version}? Будет создана новая версия.`)) {
       return;
     }
 
@@ -79,17 +79,17 @@ export default function VersionHistory({
     <section className="version-history" aria-labelledby="version-history-title">
       <div className="version-history-header">
         <div>
-          <span className="eyebrow">Audit trail</span>
-          <h2 id="version-history-title">Plan history</h2>
-          <p>Saved geometry only. Gallery media is not included.</p>
+          <span className="eyebrow">Журнал изменений</span>
+          <h2 id="version-history-title">История планировки</h2>
+          <p>Сохраняется только геометрия. Галерея в версии не участвует.</p>
         </div>
-        <span className="current-version">Current · v{currentVersion}</span>
+        <span className="current-version">Текущая · v{currentVersion}</span>
       </div>
       {error && <div className="version-error" role="alert">{error}</div>}
       {isLoading ? (
-        <div className="version-loading"><div className="spinner" />Loading history…</div>
+        <div className="version-loading"><div className="spinner" />Загрузка истории…</div>
       ) : versions.length === 0 ? (
-        <div className="version-empty">No saved versions yet. Save the plan to create the first snapshot.</div>
+        <div className="version-empty">Сохранённых версий пока нет. Сохраните план, чтобы создать первый снимок.</div>
       ) : (
         <div className="version-list">
           {versions.map((version) => (
@@ -97,7 +97,7 @@ export default function VersionHistory({
               <div className="version-number">v{version.version}</div>
               <div className="version-details">
                 <strong>{version.authorName}</strong>
-                <span>{formatSavedAt(version.savedAt)} · {version.widthCm} × {version.depthCm} cm</span>
+                <span>{formatSavedAt(version.savedAt)} · {version.widthCm} × {version.depthCm} см</span>
               </div>
               <button
                 type="button"
@@ -105,7 +105,7 @@ export default function VersionHistory({
                 onClick={() => void handleRestore(version)}
                 disabled={restoringVersion !== null || version.version === currentVersion}
               >
-                {restoringVersion === version.version ? "Restoring…" : version.version === currentVersion ? "Current" : "Restore"}
+                {restoringVersion === version.version ? "Восстановление…" : version.version === currentVersion ? "Текущая" : "Восстановить"}
               </button>
             </article>
           ))}
