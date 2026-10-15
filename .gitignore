@@ -1,0 +1,15 @@
+# Dependencies
+node_modules/
+.bun/
+
+# Build outputs & environment variables
+dist/
+build/
+.env
+.env.local
+
+# OS files
+.DS_Store
+Thumbs.db
+node_modules/
+.bun/
