@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { Eye, EyeOff } from "lucide-react";
 import { getApiErrorMessage, signIn, type AuthUser } from "../lib/api";
 
 type LoginFormProps = {
@@ -76,9 +77,10 @@ export default function LoginForm({ onAuthenticated }: LoginFormProps) {
                 type="button"
                 aria-label={showPassword ? "Скрыть пароль" : "Показать пароль"}
                 aria-pressed={showPassword}
+                title={showPassword ? "Скрыть пароль" : "Показать пароль"}
                 onClick={() => setShowPassword((visible) => !visible)}
               >
-                {showPassword ? "Скрыть" : "Показать"}
+                {showPassword ? <EyeOff aria-hidden="true" /> : <Eye aria-hidden="true" />}
               </button>
             </span>
           </label>

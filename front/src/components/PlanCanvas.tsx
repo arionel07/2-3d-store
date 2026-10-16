@@ -8,6 +8,7 @@ import type { LayoutObject } from "../lib/types";
 type PlanCanvasProps = {
   room: { widthCm: number; depthCm: number };
   objects: LayoutObject[];
+  hiddenObjectIds: string[];
   selectedObjectId: string | null;
   selectedObjectIds: string[];
   validity: Record<string, boolean>;
@@ -59,6 +60,7 @@ function formatRoomDimension(valueCm: number) {
 export default function PlanCanvas({
   room,
   objects,
+  hiddenObjectIds,
   selectedObjectId,
   selectedObjectIds,
   validity,
@@ -334,6 +336,7 @@ export default function PlanCanvas({
             rotation={-90}
           />
           {objects.map((object) => {
+            if (hiddenObjectIds.includes(object.id)) return null;
             const isSelected = selectedObjectIds.includes(object.id);
             const isValid = validity[object.id] ?? true;
             const color = isValid ? "#7b878c" : "#df6f5f";

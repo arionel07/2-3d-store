@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { Canvas, useThree } from "@react-three/fiber";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { TOUCH, MathUtils, PerspectiveCamera, Vector3 } from "three";
 import { Maximize2, Minus, Plus, RotateCw } from "lucide-react";
@@ -11,6 +11,7 @@ import { isObjectValid } from "../lib/geometry";
 type Scene3DProps = {
   room: { widthCm: number; depthCm: number };
   objects: LayoutObject[];
+  hiddenObjectIds: string[];
   selectedObjectId: string | null;
   onSelect: (id: string | null) => void;
 };
@@ -89,8 +90,9 @@ function CameraControls({ roomWidth, roomDepth, onReady, onZoomChange }: CameraC
     const maxDimension = Math.max(roomWidth, roomDepth);
     const maxPan = maxDimension * 0.65;
 
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.08;
+    // The editor needs a stable camera after a gesture. Inertia keeps moving
+    // the bounded target after the pointer is released and looks like jitter.
+    controls.enableDamping = false;
     controls.enablePan = true;
     controls.screenSpacePanning = true;
     controls.minDistance = Math.max(1.5, maxDimension * 0.18);
@@ -131,10 +133,6 @@ function CameraControls({ roomWidth, roomDepth, onReady, onZoomChange }: CameraC
       controlsRef.current = null;
     };
   }, [camera, fitCamera, gl, onReady, resetCamera, roomDepth, roomWidth, zoomBy]);
-
-  useFrame(() => {
-    controlsRef.current?.update();
-  });
 
   return null;
 }
@@ -331,7 +329,7 @@ function ObjectMesh({
   );
 }
 
-function Scene({ room, objects, selectedObjectId, onSelect, onReady, onZoomChange }: Scene3DProps & CameraControlsProps) {
+function Scene({ room, objects, hiddenObjectIds, selectedObjectId, onSelect, onReady, onZoomChange }: Scene3DProps & CameraControlsProps) {
   const roomWidth = room.widthCm / 100;
   const roomDepth = room.depthCm / 100;
   const maxDimension = Math.max(roomWidth, roomDepth);
@@ -349,7 +347,7 @@ function Scene({ room, objects, selectedObjectId, onSelect, onReady, onZoomChang
       <directionalLight castShadow position={[5, 11, 6]} intensity={2.4} shadow-mapSize={[1024, 1024]} />
       <group position={[-roomWidth / 2, 0, -roomDepth / 2]}>
         <Room width={roomWidth} depth={roomDepth} />
-        {objects.map((object) => (
+        {objects.map((object) => hiddenObjectIds.includes(object.id) ? null : (
           <ObjectMesh
             key={object.id}
             object={object}
@@ -363,7 +361,7 @@ function Scene({ room, objects, selectedObjectId, onSelect, onReady, onZoomChang
   );
 }
 
-export default function Scene3D({ room, objects, selectedObjectId, onSelect }: Scene3DProps) {
+export default function Scene3D({ room, objects, hiddenObjectIds, selectedObjectId, onSelect }: Scene3DProps) {
   const cameraApiRef = useRef<CameraApi | null>(null);
   const [isReady, setIsReady] = useState(false);
   const [zoomPercent, setZoomPercent] = useState(100);
@@ -374,7 +372,7 @@ export default function Scene3D({ room, objects, selectedObjectId, onSelect }: S
 
   return (
     <div className="scene-3d-inner">
-      <Scene room={room} objects={objects} selectedObjectId={selectedObjectId} onSelect={onSelect} roomWidth={room.widthCm / 100} roomDepth={room.depthCm / 100} onReady={handleReady} onZoomChange={setZoomPercent} />
+      <Scene room={room} objects={objects} hiddenObjectIds={hiddenObjectIds} selectedObjectId={selectedObjectId} onSelect={onSelect} roomWidth={room.widthCm / 100} roomDepth={room.depthCm / 100} onReady={handleReady} onZoomChange={setZoomPercent} />
       <div className="scene-dimension scene-dimension-width" aria-hidden="true"><span>{formatDimension(room.widthCm)} м</span></div>
       <div className="scene-dimension scene-dimension-depth" aria-hidden="true"><span>{formatDimension(room.depthCm)} м</span></div>
       <div className="scene-controls" aria-label="Управление камерой">

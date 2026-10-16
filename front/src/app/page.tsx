@@ -6,6 +6,7 @@ import {
   ChevronRight,
   CreditCard,
   Eye,
+  EyeOff,
   History as HistoryIcon,
   Home as HomeIcon,
   Images,
@@ -130,6 +131,7 @@ export default function Home() {
   const [layoutData, setLayoutData] = useState<LayoutResponse | null>(null);
   const [selectedObjectId, setSelectedObjectId] = useState<string | null>(null);
   const [selectedObjectIds, setSelectedObjectIds] = useState<string[]>([]);
+  const [hiddenObjectIds, setHiddenObjectIds] = useState<string[]>([]);
   const [activeSection, setActiveSection] = useState<AppSection>("home");
   const [viewMode, setViewMode] = useState<ViewMode>("2d");
   const [saveState, setSaveState] = useState<SaveState>("saved");
@@ -216,6 +218,7 @@ export default function Home() {
       setLayoutData(response);
       setSelectedObjectId(response.objects[0]?.id ?? null);
       setSelectedObjectIds(response.objects[0] ? [response.objects[0].id] : []);
+      setHiddenObjectIds([]);
       setActiveSection("plan");
       setSaveState("saved");
       setHasConflict(false);
@@ -310,6 +313,7 @@ export default function Home() {
     setSelectedLayoutId(layoutId);
     setSelectedObjectId(null);
     setSelectedObjectIds([]);
+    setHiddenObjectIds([]);
     setError(null);
     setHasConflict(false);
     setActiveSection("plan");
@@ -331,6 +335,12 @@ export default function Home() {
   function selectObject(id: string | null) {
     setSelectedObjectId(id);
     setSelectedObjectIds(id ? [id] : []);
+  }
+
+  function toggleObjectVisibility(id: string) {
+    setHiddenObjectIds((current) => current.includes(id)
+      ? current.filter((objectId) => objectId !== id)
+      : [...current, id]);
   }
 
   async function handleCreateStore(event: FormEvent<HTMLFormElement>) {
@@ -428,6 +438,7 @@ export default function Home() {
     const ids = selectedObjectIds.length > 0 ? selectedObjectIds : selectedObject ? [selectedObject.id] : [];
     if (!layoutData || ids.length === 0) return;
     setLayoutData((current) => current ? { ...current, objects: current.objects.filter((object) => !ids.includes(object.id)) } : current);
+    setHiddenObjectIds((current) => current.filter((id) => !ids.includes(id)));
     setSelectedObjectId(null);
     setSelectedObjectIds([]);
     setSaveState("unsaved");
@@ -467,6 +478,7 @@ export default function Home() {
 
   function handleRestored(snapshot: { layout: LayoutResponse["layout"]; objects: LayoutObject[]; currentVersion: number }) {
     setLayoutData((current) => current ? { ...current, layout: snapshot.layout, objects: snapshot.objects, currentVersion: snapshot.currentVersion } : current);
+    setHiddenObjectIds([]);
     const firstObjectId = snapshot.objects[0]?.id ?? null;
     setSelectedObjectId(firstObjectId);
     setSelectedObjectIds(firstObjectId ? [firstObjectId] : []);
@@ -489,6 +501,7 @@ export default function Home() {
     setSelectedStoreId(null);
     setSelectedLayoutId(null);
     setLayoutData(null);
+    setHiddenObjectIds([]);
     setActiveSection("home");
   }
 
@@ -595,7 +608,7 @@ export default function Home() {
                       <button type="button" className={activeEditorTool === "line" ? "active" : ""} onClick={() => setActiveEditorTool("line")} aria-label="Линия" title="Линия"><Minus aria-hidden="true" /></button>
                       <button type="button" className={activeEditorTool === "text" ? "active" : ""} onClick={() => setActiveEditorTool("text")} aria-label="Текст" title="Текст"><Type aria-hidden="true" /></button>
                     </div>
-                    <div className="editor-tool-section editor-object-list"><div className="tool-section-heading"><span className="tool-section-label">Объекты</span><small>{layoutData.objects.length}</small></div>{layoutData.objects.length === 0 ? <p className="editor-tools-empty">Добавьте объект, чтобы начать расстановку.</p> : layoutData.objects.map((object) => <div key={object.id} className={`editor-object-row ${selectedObjectIds.includes(object.id) ? "selected" : ""}`}><button type="button" className="editor-object-select" onClick={() => selectObject(object.id)}><span className="editor-object-icon"><ObjectTypeIcon type={object.type} /></span><span><strong>{object.name}</strong><small>{getObjectTypeLabel(object.type)} · {object.widthCm} × {object.depthCm} см</small></span></button><Eye className="editor-object-visibility" aria-label={`${object.name}: видим`} /></div>)}</div>
+                    <div className="editor-tool-section editor-object-list"><div className="tool-section-heading"><span className="tool-section-label">Объекты</span><small>{layoutData.objects.length}</small></div>{layoutData.objects.length === 0 ? <p className="editor-tools-empty">Добавьте объект, чтобы начать расстановку.</p> : layoutData.objects.map((object) => { const isHidden = hiddenObjectIds.includes(object.id); return <div key={object.id} className={`editor-object-row ${selectedObjectIds.includes(object.id) ? "selected" : ""} ${isHidden ? "hidden" : ""}`}><button type="button" className="editor-object-select" onClick={() => selectObject(object.id)}><span className="editor-object-icon"><ObjectTypeIcon type={object.type} /></span><span><strong>{object.name}</strong><small>{getObjectTypeLabel(object.type)} · <span className="numeric">{object.widthCm} × {object.depthCm} см</span></small></span></button><button type="button" className="editor-object-visibility" aria-label={`${object.name}: ${isHidden ? "показать" : "скрыть"}`} aria-pressed={!isHidden} title={isHidden ? "Показать объект" : "Скрыть объект"} onClick={(event) => { event.stopPropagation(); toggleObjectVisibility(object.id); }}>{isHidden ? <EyeOff aria-hidden="true" /> : <Eye aria-hidden="true" />}</button></div>; })}</div>
                     <div className="editor-properties">
                       {selectedObject ? <>
                         <div className="inspector-heading"><div><span className="eyebrow">Выбранный объект</span><input className="object-name-input" value={selectedObject.name} onChange={(event) => updateObject(selectedObject.id, { name: event.target.value })} aria-label="Название объекта" /></div><button type="button" className="icon-button danger" onClick={removeSelectedObjects} aria-label="Удалить выбранные объекты" title="Удалить объект"><Trash2 aria-hidden="true" /></button></div>
@@ -613,7 +626,7 @@ export default function Home() {
               <div className="editor-grid">
                 <div className="canvas-panel">
                   <div className="canvas-toolbar"><span className="canvas-title">{viewMode === "2d" ? "План помещения" : "Приблизительный 3D-вид"}</span><span className="canvas-help">{viewMode === "2d" ? "Перетаскивайте объекты. Пустое пространство — панорама. Масштаб — кнопками справа." : "Вращение — мышью или одним пальцем · панорама — правой кнопкой или двумя пальцами · масштаб — колесом."}</span></div>
-                  {viewMode === "2d" ? <PlanCanvas room={layoutData.layout} objects={layoutData.objects} selectedObjectId={selectedObjectId} selectedObjectIds={selectedObjectIds} validity={validity} measurements={measurements} showMeasurements={isShiftPressed} onSelect={selectObject} onMove={(id, xCm, yCm) => updateObject(id, { xCm, yCm })} /> : <div className="scene-3d"><Scene3D room={layoutData.layout} objects={layoutData.objects} selectedObjectId={selectedObjectId} onSelect={selectObject} /></div>}
+                  {viewMode === "2d" ? <PlanCanvas room={layoutData.layout} objects={layoutData.objects} hiddenObjectIds={hiddenObjectIds} selectedObjectId={selectedObjectId} selectedObjectIds={selectedObjectIds} validity={validity} measurements={measurements} showMeasurements={isShiftPressed} onSelect={selectObject} onMove={(id, xCm, yCm) => updateObject(id, { xCm, yCm })} /> : <div className="scene-3d"><Scene3D room={layoutData.layout} objects={layoutData.objects} hiddenObjectIds={hiddenObjectIds} selectedObjectId={selectedObjectId} onSelect={selectObject} /></div>}
                   <div className="canvas-legend"><span><i className="legend-dot valid" /> Объект помещается</span><span><i className="legend-dot invalid" /> Нужно исправить</span><span className="legend-note">Сетка: 50 см · Shift — измерения</span></div>
                 </div>
               </div>

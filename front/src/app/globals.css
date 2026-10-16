@@ -23,7 +23,7 @@ body {
   margin: 0;
   background: var(--paper);
   color: var(--ink);
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: var(--font-geist-sans), Geist, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-size: 14px;
 }
 
@@ -284,6 +284,39 @@ body { background: var(--paper); color: var(--ink); }
   .plan-body .canvas-legend { padding-inline: 12px; gap: 9px; font-size: 10px; }
   .plan-body .legend-note { flex-basis: 100%; }
 }
+
+/* Shared controls and typography: keep the shell light and the navigation readable. */
+.floating-nav button {
+  flex-direction: column;
+  gap: 4px;
+  line-height: 1.1;
+}
+.floating-nav button svg { flex: 0 0 auto; }
+.numeric,
+input[type="number"],
+.canvas-zoom-value,
+.scene-zoom-controls span,
+.stores-home-count,
+.dimension-preview {
+  font-family: var(--font-geist-mono), "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+}
+.planner-shell * { font-weight: 400 !important; }
+.planner-shell :is(h1, h2, h3, h4, h5, h6, strong, b, button) { font-weight: 500 !important; }
+.planner-shell :is(.eyebrow, small) { font-weight: 300 !important; }
+.auth-shell * { font-weight: 400 !important; }
+.auth-shell :is(h1, h2, h3, h4, h5, h6, strong, b, button) { font-weight: 500 !important; }
+.auth-shell :is(.eyebrow, small, .auth-footnote) { font-weight: 300 !important; }
+
+.auth-password-toggle {
+  display: inline-grid;
+  width: 36px;
+  min-width: 36px;
+  height: 36px;
+  place-items: center;
+  padding: 0;
+}
+.auth-password-toggle svg { width: 19px; height: 19px; stroke-width: 1.8; }
 
 /* 3D preview controls: compact overlays keep the scene as the primary workspace. */
 .plan-body .scene-3d-inner { background: #f7faf9; }
@@ -1424,4 +1457,47 @@ body { background: var(--paper); color: var(--ink); }
   .history-active .topbar-account {
     margin-left: 12px;
   }
+}
+
+/* Visibility belongs to the layer row and does not alter persisted geometry. */
+.plan-active .editor-object-row.hidden { color: #9ca6ab; }
+.plan-active .editor-object-row.hidden .editor-object-select { opacity: .52; }
+.plan-active .editor-object-visibility {
+  display: inline-grid;
+  width: 28px;
+  height: 32px;
+  min-height: 32px;
+  margin: 0 4px 0 auto;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  color: #586871;
+  background: transparent;
+}
+.plan-active .editor-object-visibility:hover,
+.plan-active .editor-object-visibility:focus-visible {
+  color: #8e6b00;
+  background: #fff8df;
+  outline: none;
+}
+.plan-active .editor-object-visibility svg { width: 17px; height: 17px; stroke-width: 1.7; }
+
+/* Keep the layer list and inspector in one continuous sidebar flow. */
+.plan-active .editor-tools-panel { display: flex; flex-direction: column; overflow: hidden; }
+.plan-active .editor-object-list { flex: 1 1 auto; min-height: 92px; overflow: auto; }
+.plan-active .editor-properties {
+  height: auto;
+  min-height: 220px;
+  max-height: min(48%, 390px);
+  flex: 0 1 360px;
+  margin-top: 14px;
+  padding: 18px 0 26px;
+  border-top: 1px solid #e5e8e9;
+}
+
+@media (max-width: 820px) {
+  .plan-active .editor-tools-panel { overflow: visible; }
+  .plan-active .editor-object-list { min-height: 0; overflow: visible; }
+  .plan-active .editor-properties { max-height: 240px; }
 }
