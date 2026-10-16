@@ -73,7 +73,7 @@ export default function PlanCanvas({
   const [viewport, setViewport] = useState<Viewport>({ scale: 1, x: 44, y: 44 });
 
   const getFitViewport = useCallback(() => {
-    const padding = 44;
+    const padding = size.width < 560 ? 44 : 120;
     const scale = Math.min(
       (size.width - padding * 2) / room.widthCm,
       (size.height - padding * 2) / room.depthCm,
@@ -112,15 +112,8 @@ export default function PlanCanvas({
     fitRoom();
   }, [fitRoom]);
 
-  function handleWheel(event: { evt: WheelEvent; target: { getStage: () => any } }) {
+  function handleWheel(event: { evt: WheelEvent }) {
     event.evt.preventDefault();
-    const pointer = event.target.getStage()?.getPointerPosition();
-
-    if (!pointer) {
-      return;
-    }
-
-    zoomAt(viewport.scale * (event.evt.deltaY > 0 ? 0.9 : 1.1), pointer);
   }
 
   function zoomAt(requestedScale: number, point: { x: number; y: number }) {
@@ -237,7 +230,7 @@ export default function PlanCanvas({
       <Line
         key={`vertical-${x}`}
         points={[x, 0, x, room.depthCm]}
-        stroke="#dce6ed"
+        stroke="#e8edef"
         strokeWidth={(x % 200 === 0 ? 1 : 0.6) / viewport.scale}
         listening={false}
       />,
@@ -249,7 +242,7 @@ export default function PlanCanvas({
       <Line
         key={`horizontal-${y}`}
         points={[0, y, room.widthCm, y]}
-        stroke="#dce6ed"
+        stroke="#e8edef"
         strokeWidth={(y % 200 === 0 ? 1 : 0.6) / viewport.scale}
         listening={false}
       />,
@@ -343,8 +336,8 @@ export default function PlanCanvas({
           {objects.map((object) => {
             const isSelected = selectedObjectIds.includes(object.id);
             const isValid = validity[object.id] ?? true;
-            const color = isValid ? "#77c9bd" : "#ef8e7b";
-            const fill = isValid ? "#d8f2ed" : "#ffe2dc";
+            const color = isValid ? "#7b878c" : "#df6f5f";
+            const fill = isValid ? "#f4f6f6" : "#fff0ed";
 
             return (
               <Group
@@ -372,7 +365,7 @@ export default function PlanCanvas({
                   width={object.widthCm}
                   height={object.depthCm}
                   fill={fill}
-                  stroke={isSelected ? "#0f766e" : color}
+                  stroke={isSelected ? "#f0ba22" : color}
                   strokeWidth={(isSelected ? 3 : 2) / viewport.scale}
                   cornerRadius={4 / viewport.scale}
                   shadowColor="#6c7d89"
@@ -389,6 +382,24 @@ export default function PlanCanvas({
                   fontSize={Math.max(10 / viewport.scale, Math.min(14 / viewport.scale, object.widthCm / 9))}
                   listening={false}
                 />
+                {isSelected && [
+                  [0, 0],
+                  [object.widthCm, 0],
+                  [object.widthCm, object.depthCm],
+                  [0, object.depthCm],
+                ].map(([x, y], index) => (
+                  <Rect
+                    key={`handle-${index}`}
+                    x={x - 4 / viewport.scale}
+                    y={y - 4 / viewport.scale}
+                    width={8 / viewport.scale}
+                    height={8 / viewport.scale}
+                    fill="#f0ba22"
+                    stroke="#ffffff"
+                    strokeWidth={1 / viewport.scale}
+                    listening={false}
+                  />
+                ))}
               </Group>
             );
           })}
@@ -415,12 +426,9 @@ export default function PlanCanvas({
       </Stage>
       <div className="canvas-zoom-controls" aria-label="Масштаб холста">
         <button type="button" onClick={() => zoomBy(0.9)} aria-label="Уменьшить масштаб">−</button>
-        <span>{Math.round((viewport.scale / getFitViewport().scale) * 100)}%</span>
+        <button type="button" className="canvas-zoom-value" onClick={fitRoom} aria-label="Показать всё помещение" title="Показать всё помещение">{Math.round((viewport.scale / getFitViewport().scale) * 100)}%</button>
         <button type="button" onClick={() => zoomBy(1.1)} aria-label="Увеличить масштаб">+</button>
       </div>
-      <button type="button" className="canvas-fit-button" onClick={fitRoom}>
-        Показать всё помещение
-      </button>
     </div>
   );
 }

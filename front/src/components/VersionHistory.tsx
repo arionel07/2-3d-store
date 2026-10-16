@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { RefreshCw } from "lucide-react";
 import { Group, Layer, Rect, Stage } from "react-konva";
 import {
   getApiErrorMessage,
@@ -31,9 +32,9 @@ function formatSavedAt(value: string) {
 
   return new Intl.DateTimeFormat("ru-RU", {
     day: "numeric",
-    month: "short",
+    month: "long",
     year: "numeric",
-  }).format(date);
+  }).format(date).replace(/\s*г\.$/, "");
 }
 
 function formatRoomSize(widthCm: number, depthCm: number) {
@@ -138,7 +139,7 @@ export default function VersionHistory({
           <p>Сохранённые версии этого плана</p>
         </div>
         <button type="button" className="version-refresh" onClick={() => void loadVersions()} disabled={isLoading}>
-          <span aria-hidden="true">↻</span> Обновить
+          <RefreshCw aria-hidden="true" /> Обновить
         </button>
       </div>
       {error && <div className="version-error" role="alert">{error}</div>}

@@ -24,6 +24,8 @@ The implementation adapts the composition and rhythm, without copying logos or e
 - Gallery mobile: `/tmp/store-layout-gallery-mobile.png`, viewport 390 × 844 CSS px, device scale 1.
 - History desktop: `/tmp/store-layout-history-initial-desktop.png`, viewport 1440 × 900 CSS px, device scale 1.
 - History mobile: `/tmp/store-layout-history-initial-mobile.png`, viewport 390 × 844 CSS px, device scale 1.
+- History desktop after the current iteration: `/tmp/store-layout-history-v2-initial-desktop.png`, viewport 1600 × 1000 CSS px, device scale 1.
+- History mobile after the current iteration: `/tmp/store-layout-history-v2-initial-mobile.png`, viewport 390 × 844 CSS px, device scale 1.
 - Editor desktop: `/tmp/store-layout-editor-new-initial-desktop.png`, viewport 1440 × 900 CSS px, device scale 1.
 - Editor mobile: `/tmp/store-layout-editor-new-initial-mobile.png`, viewport 390 × 844 CSS px, device scale 1.
 - 3D editor desktop: `/tmp/store-layout-3d-desktop.png`, viewport 1440 × 900 CSS px, device scale 1.
@@ -34,6 +36,10 @@ The implementation adapts the composition and rhythm, without copying logos or e
 - Stores home mobile after the current iteration: `/tmp/store-layout-home-v2-mobile.png`, viewport 390 × 844 CSS px, device scale 1.
 - Gallery desktop after the current iteration: `/tmp/store-layout-gallery-v2-desktop.png`, viewport 1600 × 1000 CSS px, device scale 1.
 - Gallery mobile after the current iteration: `/tmp/store-layout-gallery-v2-mobile.png`, viewport 390 × 844 CSS px, device scale 1.
+- 2D editor desktop after the current iteration: `/tmp/store-layout-editor-v2-desktop.png`, viewport 1600 × 1000 CSS px, device scale 1.
+- 2D editor mobile after the current iteration: `/tmp/store-layout-editor-v2-mobile.png`, viewport 390 × 844 CSS px, device scale 1.
+- 3D editor desktop after the current iteration: `/tmp/store-layout-editor-3d-desktop.png`, viewport 1600 × 1000 CSS px, device scale 1.
+- 3D editor mobile after the current iteration: `/tmp/store-layout-editor-3d-mobile.png`, viewport 390 × 844 CSS px, device scale 1.
 - State: authenticated plan with API-backed objects, both 2D and 3D modes tested, and the shared bottom navigation.
 
 The screenshots are full-page captures at the stated CSS viewport sizes and device scale 1; no density normalization was needed.
@@ -50,9 +56,9 @@ Focused editor region: the previous split store sidebar and right inspector are 
 
 Responsive editor region: desktop gives the canvas most of the width; mobile makes the single panel compact and scrollable, then gives the canvas a bounded area above the fixed navigation. The initial mobile canvas ended at y=775 while the navigation began at y=784, so the room is not hidden behind the menu.
 
-Focused 3D region: the same centimeter-based room and objects are converted to meters in the existing React Three Fiber scene. The scene contains a bounded floor grid, restrained boundary walls, simple type-specific boxes, and a yellow selected object. «Сбросить» and «Показать всё» are compact overlays, while the main canvas remains free of permanent panels.
+Focused 3D region: the same centimeter-based room and objects are converted to meters in the existing React Three Fiber scene. The scene contains a bounded floor grid, restrained boundary walls, type-specific shelf/checkout/display primitives, a neutral selected object with a yellow contour, and room dimension labels. Camera reset, fit, and button zoom controls sit at the lower right, while the main canvas remains free of permanent panels.
 
-Responsive 3D region: desktop and touch-capable mobile captures keep the whole room visible above the shared navigation. The camera has orbit, wheel/touch zoom, pan, polar-angle and distance limits, plus bounded target panning so the scene cannot be taken below the floor or lost indefinitely.
+Responsive 3D region: desktop and touch-capable mobile captures keep the room framed within the scene area and preserve the shared navigation. The camera has orbit, wheel/touch zoom, button zoom, pan, polar-angle and distance limits, plus bounded target panning so the scene cannot be taken below the floor or lost indefinitely.
 
 Focused login region: the unauthenticated state now uses a white, open layout with the existing brand mark at the top left, a centered compact form, thin neutral field borders, a yellow «Войти» action, a password visibility control, and the administrator-access note. It does not render the application navigation, editor panels, or public registration controls.
 
@@ -66,6 +72,10 @@ Focused gallery region: the standalone gallery now follows the attached composit
 
 Responsive gallery region: desktop keeps the 3-column gallery and generous whitespace from the reference. Mobile switches to one readable media column, keeps the add action and filters usable, and places the shared navigation after the content instead of covering a card.
 
+Focused 2D editor region: the plan now uses the reference's 58px white header, centered 2D/3D switch, one 270px «Слои» sidebar, yellow active selection, Lucide tool icons, object visibility markers, and a bottom properties section. The rest of the screen is reserved for the real Konva room, walls, grid, meter labels, objects, measurements, and the shared «План» navigation. The canvas uses centimeter geometry without changing the API model.
+
+Responsive 2D editor region: desktop keeps the room centered with enough breathing room for the floating controls and navigation. On mobile the single sidebar stacks above a bounded canvas without overlapping its object rows or properties; the page remains scrollable when the complete sidebar is taller than the viewport.
+
 Primary interactions tested in the rendered app:
 
 - Opening a layout from a store card and navigating to «История».
@@ -78,10 +88,10 @@ Primary interactions tested in the rendered app:
 - Verifying «История» is active in the shared bottom navigation on desktop and mobile.
 - Verifying the editor has no duplicate store sidebar or right inspector and only one collapsible tool/object/properties panel.
 - Adding, selecting, moving, rotating, duplicating, deleting, and selecting all objects; confirming text fields do not receive editor shortcuts.
-- Zooming with the wheel and controls, fitting the room, panning the workspace from empty canvas space, and showing Shift measurements without moving objects.
+- Zooming with the `− / percentage / +` controls, verifying the wheel does not change zoom, fitting the room from the percentage control, panning the workspace from empty canvas space, and showing Shift measurements without moving objects.
 - Verifying valid objects use the green state, invalid geometry uses the red state, saves keep the existing API format, and stale saves retain the existing Russian `409` conflict/reload flow.
 - Switching to 3D without changing the selected layout, keeping the selected object visible in yellow and the sidebar selection intact.
-- Verifying orbit, wheel zoom, «Показать всё», «Сбросить», mobile viewport rendering, and that camera gestures leave the save state unchanged.
+- Verifying orbit, wheel zoom, button zoom, «Показать всё», «Сбросить», mobile viewport rendering, and that camera gestures leave the save state unchanged.
 - Verifying the unauthenticated login state has no bottom navigation or sidebar, native required field validation, password show/hide behavior, Russian invalid-credentials feedback, disabled loading state, and successful handoff to the existing authenticated home flow.
 - Verifying the filled home state with three API-shaped stores, Konva plan previews, date/size metadata, active «Главная» navigation, card-to-editor navigation, store creation with an empty optional address, and creation of a layout with the default valid dimensions.
 - Verifying the filled gallery state with API-shaped media, the «Фото магазина» / «Идеи» tabs, «Все изображения» / «Недавно добавленные» filters, local search, yellow add action, active «Галерея» navigation, file upload, external URL add, and confirmed deletion without a page reload.
@@ -99,6 +109,9 @@ Primary interactions tested in the rendered app:
 9. Login browser QA confirmed the new desktop/mobile composition, required fields, password visibility toggle, expected 401 invalid-credentials response translated to Russian, submit loading state, and successful Better Auth callback handoff. The expected 401 console entry was generated by the invalid-login test.
 10. Stores home browser QA confirmed the current attached concept at 1600 × 1000 and 390 × 844, no horizontal overflow, real-data previews, yellow primary action, active navigation, opening a plan, optional store address, and layout creation. The QA data was intercepted only in the browser test and was not written to the product database.
 11. Gallery browser QA confirmed the current attached concept at 1600 × 1000 and 390 × 844, the topbar breadcrumb/save state, 3-column desktop and single-column mobile layout, tabs, filters, search, file upload, external URL add, deletion confirmation, no horizontal overflow, and no browser errors. The API/media data was intercepted only in the browser test and was not written to the product database.
+12. 2D editor browser QA confirmed the attached concept at 1600 × 1000 and 390 × 844, one sidebar with no right inspector, yellow object selection, Lucide tools, object add/select flow, button-only zoom, wheel zoom disabled, fit-to-room, Shift measurements, save state, no horizontal overflow, and no browser errors. The API/layout data was intercepted only in the browser test and was not written to the product database.
+13. 3D editor browser QA confirmed the attached concept at 1600 × 1000 and 390 × 844, the 3D switch, type-specific furniture primitives, neutral furniture with a yellow selection contour, room dimensions, bottom-right reset/fit/button-zoom controls, orbit interaction, active «План» navigation, and no browser errors. The API/layout data was intercepted only in the browser test and was not written to the product database.
+14. History browser QA confirmed the attached concept at 1600 × 1000 and 390 × 844, the white header/breadcrumb, compact version rows, data-backed snapshot thumbnails, yellow «Текущая» badge, refresh action, restore confirmation, successful restore, stale-version `409` handling, active «История» navigation, and corrected mobile thumbnail scaling. The API/version data was intercepted only in the browser test and was not written to the product database.
 
 ## Findings
 

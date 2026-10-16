@@ -4,13 +4,24 @@ import dynamic from "next/dynamic";
 import {
   CircleUserRound,
   ChevronRight,
+  CreditCard,
+  Eye,
   History as HistoryIcon,
   Home as HomeIcon,
   Images,
   LayoutDashboard,
+  Layers3,
   LogOut,
   Map,
+  Minus,
+  MousePointer2,
+  PanelLeft,
   Plus,
+  RectangleHorizontal,
+  RotateCw,
+  Square,
+  Trash2,
+  Type,
   X,
 } from "lucide-react";
 import {
@@ -57,9 +68,9 @@ type AuthState = "loading" | "authenticated" | "unauthenticated";
 type ObjectField = "xCm" | "yCm" | "widthCm" | "depthCm" | "heightCm" | "rotationDeg";
 
 const objectPresets = [
-  { type: "shelf", label: "Стеллаж", icon: "▤", widthCm: 180, depthCm: 60, heightCm: 180 },
-  { type: "checkout", label: "Касса", icon: "▥", widthCm: 140, depthCm: 80, heightCm: 100 },
-  { type: "display", label: "Витрина", icon: "◫", widthCm: 120, depthCm: 80, heightCm: 160 },
+  { type: "shelf", label: "Стеллаж", widthCm: 180, depthCm: 60, heightCm: 180 },
+  { type: "checkout", label: "Касса", widthCm: 140, depthCm: 80, heightCm: 100 },
+  { type: "display", label: "Витрина", widthCm: 120, depthCm: 80, heightCm: 160 },
 ] as const;
 
 const objectFieldLabels: Record<ObjectField, string> = {
@@ -104,6 +115,12 @@ function getObjectTypeLabel(type: string) {
   return objectPresets.find((preset) => preset.type === type)?.label ?? type;
 }
 
+function ObjectTypeIcon({ type }: { type: string }) {
+  if (type === "checkout") return <CreditCard aria-hidden="true" />;
+  if (type === "display") return <RectangleHorizontal aria-hidden="true" />;
+  return <Square aria-hidden="true" />;
+}
+
 export default function Home() {
   const [authState, setAuthState] = useState<AuthState>("loading");
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
@@ -122,6 +139,8 @@ export default function Home() {
   const [isLayoutModalOpen, setIsLayoutModalOpen] = useState(false);
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const [isEditorToolsCollapsed, setIsEditorToolsCollapsed] = useState(false);
+  const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
+  const [activeEditorTool, setActiveEditorTool] = useState<"select" | "rectangle" | "line" | "text">("select");
   const [isShiftPressed, setIsShiftPressed] = useState(false);
   const [hasConflict, setHasConflict] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -386,6 +405,7 @@ export default function Home() {
     setSelectedObjectIds([object.id]);
     setSaveState("unsaved");
     setHasConflict(false);
+    setIsAddMenuOpen(false);
   }
 
   function duplicateSelectedObject() {
@@ -473,7 +493,7 @@ export default function Home() {
   }
 
   const saveLabel = {
-    saved: activeSection === "home" || activeSection === "gallery" || activeSection === "history" ? "Сохранено" : "Все изменения сохранены",
+    saved: "Сохранено",
     unsaved: "Есть несохранённые изменения",
     saving: "Сохранение…",
     error: "Ошибка сохранения",
@@ -498,11 +518,15 @@ export default function Home() {
         {layoutData && activeSection !== "home" && <div className="topbar-context"><span>{selectedStore?.name}</span><b>/</b><strong>{activeSection === "plan" ? layoutData.layout.name : activeSection === "gallery" ? "Галерея" : "История"}</strong></div>}
         {layoutData && activeSection === "plan" ? (
           <div className="view-switch" aria-label="Режим просмотра">
-            <button type="button" className={viewMode === "2d" ? "active" : ""} onClick={() => setViewMode("2d")} aria-pressed={viewMode === "2d"}>2D план</button>
-            <button type="button" className={viewMode === "3d" ? "active" : ""} onClick={() => setViewMode("3d")} aria-pressed={viewMode === "3d"}>3D вид</button>
+            <button type="button" className={viewMode === "2d" ? "active" : ""} onClick={() => setViewMode("2d")} aria-pressed={viewMode === "2d"}>2D</button>
+            <button type="button" className={viewMode === "3d" ? "active" : ""} onClick={() => setViewMode("3d")} aria-pressed={viewMode === "3d"}>3D</button>
           </div>
         ) : activeSection === "home" ? <span className="topbar-note">Внутренний инструмент</span> : <span className="topbar-spacer" aria-hidden="true" />}
-        <div className={`save-indicator ${saveState}`}><span className="status-dot" /><span>{saveLabel}</span></div>
+        {activeSection === "plan" ? (
+          <button type="button" className={`save-indicator ${saveState}`} onClick={() => void saveObjects()} disabled={saveState === "saving"} aria-label="Сохранить план">
+            <span className="status-dot" /><span>{saveLabel}</span>
+          </button>
+        ) : <div className={`save-indicator ${saveState}`}><span className="status-dot" /><span>{saveLabel}</span></div>}
         <div className="topbar-account">
           <button
             type="button"
@@ -550,23 +574,35 @@ export default function Home() {
             </div>
           ) : (
             <>
-              <div className="editor-page-header">
-                <div><span className="eyebrow">План помещения</span><p>{formatRoomSize(layoutData.layout.widthCm, layoutData.layout.depthCm)} · размеры хранятся в сантиметрах</p></div>
-                <div className="workspace-actions"><button type="button" className="button button-primary save-button" onClick={() => void saveObjects()} disabled={saveState === "saving"}>{saveState === "saving" ? "Сохранение…" : "Сохранить план"}</button></div>
-              </div>
               <div className={`editor-layout ${isEditorToolsCollapsed ? "tools-collapsed" : ""}`}>
                 <aside className="editor-tools-panel">
-                  <div className="editor-tools-header"><div><span className="eyebrow">Слои</span>{!isEditorToolsCollapsed && <strong>Инструменты и объекты</strong>}</div><button type="button" className="panel-toggle" onClick={() => setIsEditorToolsCollapsed((current) => !current)} aria-label={isEditorToolsCollapsed ? "Развернуть панель редактора" : "Свернуть панель редактора"} title={isEditorToolsCollapsed ? "Развернуть панель редактора" : "Свернуть панель редактора"}>{isEditorToolsCollapsed ? "›" : "‹"}</button></div>
+                  <div className="editor-tools-header">
+                    {!isEditorToolsCollapsed && <div className="editor-layers-title"><Layers3 aria-hidden="true" /><strong>Слои</strong></div>}
+                    <div className="editor-tools-actions">
+                      {!isEditorToolsCollapsed && <div className="editor-add-wrap">
+                        <button type="button" className="editor-add-button" onClick={() => setIsAddMenuOpen((current) => !current)} aria-label="Добавить объект" aria-expanded={isAddMenuOpen} title="Добавить объект"><Plus aria-hidden="true" /></button>
+                        {isAddMenuOpen && <div className="editor-add-menu" role="menu">
+                          {objectPresets.map((preset) => <button type="button" key={preset.type} role="menuitem" onClick={() => addObject(preset)}><ObjectTypeIcon type={preset.type} />{preset.label}</button>)}
+                        </div>}
+                      </div>}
+                      <button type="button" className="panel-toggle" onClick={() => setIsEditorToolsCollapsed((current) => !current)} aria-label={isEditorToolsCollapsed ? "Развернуть панель редактора" : "Свернуть панель редактора"} title={isEditorToolsCollapsed ? "Развернуть панель редактора" : "Свернуть панель редактора"}>{isEditorToolsCollapsed ? <PanelLeft aria-hidden="true" /> : <ChevronRight aria-hidden="true" />}</button>
+                    </div>
+                  </div>
                   {!isEditorToolsCollapsed && <>
-                    <div className="editor-tool-section editor-tool-insert"><span className="tool-section-label">Добавить объект</span><div className="editor-tool-list">{objectPresets.map((preset) => <button type="button" key={preset.type} className="editor-tool-button" onClick={() => addObject(preset)}><span className="editor-tool-icon">{preset.icon}</span><span>{preset.label}</span><b>+</b></button>)}</div></div>
-                    <div className="editor-tool-section editor-object-list"><div className="tool-section-heading"><span className="tool-section-label">Объекты</span><small>{layoutData.objects.length}</small></div>{layoutData.objects.length === 0 ? <p className="editor-tools-empty">Добавьте объект, чтобы начать расстановку.</p> : layoutData.objects.map((object) => <button type="button" key={object.id} className={`editor-object-row ${selectedObjectIds.includes(object.id) ? "selected" : ""}`} onClick={() => selectObject(object.id)}><span className={`object-status ${validity[object.id] ? "valid" : "invalid"}`} /><span><strong>{object.name}</strong><small>{getObjectTypeLabel(object.type)} · {object.widthCm} × {object.depthCm} см</small></span></button>)}</div>
+                    <div className="editor-mode-toolbar" aria-label="Инструменты редактора">
+                      <button type="button" className={activeEditorTool === "select" ? "active" : ""} onClick={() => setActiveEditorTool("select")} aria-label="Выбор" title="Выбор"><MousePointer2 aria-hidden="true" /></button>
+                      <button type="button" className={activeEditorTool === "rectangle" ? "active" : ""} onClick={() => setActiveEditorTool("rectangle")} aria-label="Прямоугольник" title="Прямоугольник"><Square aria-hidden="true" /></button>
+                      <button type="button" className={activeEditorTool === "line" ? "active" : ""} onClick={() => setActiveEditorTool("line")} aria-label="Линия" title="Линия"><Minus aria-hidden="true" /></button>
+                      <button type="button" className={activeEditorTool === "text" ? "active" : ""} onClick={() => setActiveEditorTool("text")} aria-label="Текст" title="Текст"><Type aria-hidden="true" /></button>
+                    </div>
+                    <div className="editor-tool-section editor-object-list"><div className="tool-section-heading"><span className="tool-section-label">Объекты</span><small>{layoutData.objects.length}</small></div>{layoutData.objects.length === 0 ? <p className="editor-tools-empty">Добавьте объект, чтобы начать расстановку.</p> : layoutData.objects.map((object) => <div key={object.id} className={`editor-object-row ${selectedObjectIds.includes(object.id) ? "selected" : ""}`}><button type="button" className="editor-object-select" onClick={() => selectObject(object.id)}><span className="editor-object-icon"><ObjectTypeIcon type={object.type} /></span><span><strong>{object.name}</strong><small>{getObjectTypeLabel(object.type)} · {object.widthCm} × {object.depthCm} см</small></span></button><Eye className="editor-object-visibility" aria-label={`${object.name}: видим`} /></div>)}</div>
                     <div className="editor-properties">
                       {selectedObject ? <>
-                        <div className="inspector-heading"><div><span className="eyebrow">Выбранный объект</span><input className="object-name-input" value={selectedObject.name} onChange={(event) => updateObject(selectedObject.id, { name: event.target.value })} aria-label="Название объекта" /></div><button type="button" className="icon-button danger" onClick={removeSelectedObjects} aria-label="Удалить выбранные объекты" title="Удалить объект">×</button></div>
+                        <div className="inspector-heading"><div><span className="eyebrow">Выбранный объект</span><input className="object-name-input" value={selectedObject.name} onChange={(event) => updateObject(selectedObject.id, { name: event.target.value })} aria-label="Название объекта" /></div><button type="button" className="icon-button danger" onClick={removeSelectedObjects} aria-label="Удалить выбранные объекты" title="Удалить объект"><Trash2 aria-hidden="true" /></button></div>
                         <div className={`fit-status ${validity[selectedObject.id] ? "valid" : "invalid"}`}><span>{validity[selectedObject.id] ? "✓" : "!"}</span><div><strong>{validity[selectedObject.id] ? "Размещение корректно" : "Нужно исправить размещение"}</strong><small>{validity[selectedObject.id] ? "Объект помещается в комнату и не пересекается." : "Переместите или измените размер объекта."}</small></div></div>
                         <div className="inspector-section"><div className="section-title">Размеры <span>(см)</span></div><div className="field-grid three-columns">{(["widthCm", "depthCm", "heightCm"] as const).map((field) => <label key={field}><span>{objectFieldLabels[field]}</span><input type="number" min="1" value={selectedObject[field]} onChange={(event) => updateNumericObjectField(field, event.target.value)} /></label>)}</div></div>
                         <div className="inspector-section"><div className="section-title">Позиция <span>(см)</span></div><div className="field-grid two-columns">{(["xCm", "yCm"] as const).map((field) => <label key={field}><span>{objectFieldLabels[field]}</span><input type="number" value={selectedObject[field]} onChange={(event) => updateNumericObjectField(field, event.target.value)} /></label>)}</div></div>
-                        <div className="inspector-section rotation-section"><div className="section-title">Поворот <span>(°)</span></div><div className="rotation-control"><input type="number" value={selectedObject.rotationDeg} onChange={(event) => updateNumericObjectField("rotationDeg", event.target.value)} /><button type="button" className="rotate-button" onClick={rotateSelectedObject} title="Повернуть на 90 градусов">↻</button></div></div>
+                        <div className="inspector-section rotation-section"><div className="section-title">Поворот <span>(°)</span></div><div className="rotation-control"><input type="number" value={selectedObject.rotationDeg} onChange={(event) => updateNumericObjectField("rotationDeg", event.target.value)} /><button type="button" className="rotate-button" onClick={rotateSelectedObject} title="Повернуть на 90 градусов"><RotateCw aria-hidden="true" /></button></div></div>
                         {isShiftPressed && measurements && <div className="measurement-panel"><div className="section-title">Измерения <span>Shift</span></div><div className="measurement-walls"><span>Слева <b>{formatMeasurement(measurements.walls.leftCm)}</b></span><span>Справа <b>{formatMeasurement(measurements.walls.rightCm)}</b></span><span>Сверху <b>{formatMeasurement(measurements.walls.topCm)}</b></span><span>Снизу <b>{formatMeasurement(measurements.walls.bottomCm)}</b></span></div><div className="measurement-objects"><span>Ближайшие объекты</span>{measurements.nearestObjects.length === 0 ? <small>Других объектов нет</small> : measurements.nearestObjects.map((item) => <small key={item.id}>{item.name}: <b>{formatMeasurement(item.distanceCm)}</b></small>)}</div></div>}
                         <div className="inspector-footer"><span className="type-label">Тип</span><span className="type-value">{getObjectTypeLabel(selectedObject.type)}</span></div>
                       </> : <div className="inspector-empty"><div className="inspector-empty-icon">⌁</div><strong>Выберите объект</strong><p>Нажмите на объект или слой, чтобы изменить его параметры.</p></div>}
@@ -576,7 +612,7 @@ export default function Home() {
                 <div className="editor-main">
               <div className="editor-grid">
                 <div className="canvas-panel">
-                  <div className="canvas-toolbar"><span className="canvas-title">{viewMode === "2d" ? "План помещения" : "Приблизительный 3D-вид"}</span><span className="canvas-help">{viewMode === "2d" ? "Перетаскивайте объекты. Пустое пространство — панорама. Колесо — масштаб." : "Вращение — мышью или одним пальцем · панорама — правой кнопкой или двумя пальцами · масштаб — колесом."}</span></div>
+                  <div className="canvas-toolbar"><span className="canvas-title">{viewMode === "2d" ? "План помещения" : "Приблизительный 3D-вид"}</span><span className="canvas-help">{viewMode === "2d" ? "Перетаскивайте объекты. Пустое пространство — панорама. Масштаб — кнопками справа." : "Вращение — мышью или одним пальцем · панорама — правой кнопкой или двумя пальцами · масштаб — колесом."}</span></div>
                   {viewMode === "2d" ? <PlanCanvas room={layoutData.layout} objects={layoutData.objects} selectedObjectId={selectedObjectId} selectedObjectIds={selectedObjectIds} validity={validity} measurements={measurements} showMeasurements={isShiftPressed} onSelect={selectObject} onMove={(id, xCm, yCm) => updateObject(id, { xCm, yCm })} /> : <div className="scene-3d"><Scene3D room={layoutData.layout} objects={layoutData.objects} selectedObjectId={selectedObjectId} onSelect={selectObject} /></div>}
                   <div className="canvas-legend"><span><i className="legend-dot valid" /> Объект помещается</span><span><i className="legend-dot invalid" /> Нужно исправить</span><span className="legend-note">Сетка: 50 см · Shift — измерения</span></div>
                 </div>
